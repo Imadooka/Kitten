@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>เพิ่มวัตถุดิบ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: #f6fbff;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .form-container {
+      max-width: 420px;
+      margin: 32px auto;
+      background: #fff;
+      padding: 24px 16px;
+      border-radius: 16px;
+    }
+    h2 {
+      text-align: center;
+      color: #1976D2;
+      margin-bottom: 18px;
+      font-weight: 500;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      color: #1976D2;
+      font-weight: 400;
+      font-size: 1rem;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="file"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #e3f2fd;
+      background: #f6fbff;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+      transition: border 0.2s;
+      box-sizing: border-box;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus {
+      border: 1.5px solid #1976D2;
+      outline: none;
+      background: #e3f2fd;
+    }
+    input[type="file"] {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 1rem;
+    }
+    button {
+      margin-top: 24px;
+      background: #1976D2;
+      color: #fff;
+      border: none;
+      padding: 14px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 500;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #1565C0;
+    }
+    .preview-img {
+      display: block;
+      margin: 14px auto 0 auto;
+      max-width: 90vw;
+      max-height: 180px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #eee;
+      border: 1px solid #e3f2fd;
+    }
+    @media (max-width: 600px) {
+      .form-container {
+        max-width: 98vw;
+        padding: 12px 4vw;
+        margin: 16px auto;
+      }
+      h2 { font-size: 1.1rem; }
+      .preview-img { max-width: 98vw; max-height: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>เพิ่มวัตถุดิบใหม่</h2>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="name">ชื่อวัตถุดิบ</label>
+      <input type="text" name="name" id="name" required placeholder="เช่น นมสด, ไข่ไก่">
+
+      <label for="quantity">จำนวน</label>
+      <input type="number" name="quantity" id="quantity" min="1" value="1" required placeholder="จำนวน">
+
+      <label for="prepared_date">วันที่เตรียม</label>
+      <input type="date" name="prepared_date" id="prepared_date" value="{{ today }}" required>
+
+      <label for="expiry_date">วันหมดอายุ</label>
+      <input type="date" name="expiry_date" id="expiry_date" required>
+
+      <label for="image_file">เพิ่มรูปภาพใหม่</label>
+      <input type="file" name="image_file" id="image_file" accept="image/*">
+      <img id="preview" class="preview-img" style="display:none;" alt="Preview">
+
+      <button type="submit">เพิ่มวัตถุดิบ</button>
+    </form>
+  </div>
+
+  <script>
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const preparedInput = document.getElementById('prepared_date');
+      const expiryInput = document.getElementById('expiry_date');
+      function setExpiry() {
+        const preparedDate = new Date(preparedInput.value);
+        preparedDate.setDate(preparedDate.getDate() + 7);
+        expiryInput.value = preparedDate.toISOString().slice(0, 10);
+      }
+      preparedInput.addEventListener('change', setExpiry);
+      setExpiry();
+
+      
+      const imageInput = document.getElementById('image_file');
+      const preview = document.getElementById('preview');
+      imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+          }
+          reader.readAsDataURL(this.files[0]);
+        } else {
+          preview.src = '';
+          preview.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

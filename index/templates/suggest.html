@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>เมนูแนะนำ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: #f0f8ff;
+      color: #37474F;
+      margin: 0
+    }
+
+    .navbar {
+      background: #fff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #90CAF9
+    }
+
+    .navbar a {
+      color: #37474F;
+      text-decoration: none;
+      margin-left: 14px
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 16px
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    input[type=text] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #90CAF9;
+      border-radius: 8px
+    }
+
+    button {
+      background: #1976D2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+      padding: 16px;
+      margin-top: 16px
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin: 4px 6px 0 0;
+      font-size: 14px
+    }
+
+    .pill.have {
+      background: #E8F5E9;
+      color: #2E7D32
+    }
+
+    .pill.missing {
+      background: #FFEBEE;
+      color: #C62828
+    }
+
+    #voiceStatus {
+      font-size: 12px;
+      color: #1976D2;
+      margin-left: 8px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <div><strong>KitchenSync</strong></div>
+    <div>
+      <a href="{% url 'index' %}">หน้าหลัก</a>
+      <a href="{% url 'suggest' %}">เมนูแนะนำ</a>
+      <a href="{% url 'add_ingredient' %}">เพิ่มวัตถุดิบ</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>เมนูแนะนำจากเสียง</h1>
+
+    <div class="row">
+      <input id="q" type="text" placeholder="พูดหรือพิมพ์ชื่อเมนู เช่น ผัดกะเพรา">
+      <button id="mic">🎤 พูด</button>
+      <button id="go">ค้นหา</button>
+      <span id="voiceStatus"></span>
+    </div>
+
+    <div class="card" id="daily" style="margin-top:16px;">
+      <h2>เมนูแนะนำประจำวัน</h2>
+      <div id="dailyGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"></div>
+    </div>
+
+    <div id="result" class="card" style="display:none;">
+      <h2 id="dish"></h2>
+      <h3>วัตถุดิบที่ต้องใช้:</h3>
+      <div id="all"></div>
+
+      <h3 style="margin-top:12px;">ของที่มีในระบบ</h3>
+      <div id="have"></div>
+
+      <h3 style="margin-top:12px;">ยังขาด</h3>
+      <div id="missing"></div>
+    </div>
+  </div>
+
+  <script>
+    // ====== util ======
+    function pill(text, cls) { const s = document.createElement('span'); s.className = 'pill ' + cls; s.textContent = text; return s; }
+    function get(url) { return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()); }
+    function toLower(s) { return (s || '').toLocaleLowerCase('th-TH'); }
+
+    // ====== call API & render ======
+    async function run(q) {
+      if (!q) { alert('ใส่ชื่อเมนู'); return; }
+      const data = await get(`{% url 'api_recipe_suggest' %}?q=${encodeURIComponent(q)}`);
+      if (!data.ok) { alert(data.error || 'หาเมนูไม่พบ'); return; }
+
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('dish').textContent = data.dish;
+
+      const allBox = document.getElementById('all'); allBox.innerHTML = '';
+      const haveBox = document.getElementById('have'); haveBox.innerHTML = '';
+      const missBox = document.getElementById('missing'); missBox.innerHTML = '';
+
+      (data.ingredients || []).forEach(x => allBox.appendChild(pill(x, '')));
+      (data.have || []).forEach(x => haveBox.appendChild(pill(x, 'have')));
+      (data.missing || []).forEach(x => missBox.appendChild(pill(x, 'missing')));
+    }
+
+    document.getElementById('go').addEventListener('click', () => run(document.getElementById('q').value.trim()));
+    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') run(e.target.value.trim()); });
+
+    // ====== voice ======
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null, listening = false;
+    function setStatus(t) { document.getElementById('voiceStatus').textContent = t || ''; }
+    function ensureRec() {
+      if (!SpeechRecognition) { alert('เบราว์เซอร์นี้ไม่รองรับคำสั่งเสียง'); return null; }
+      if (!rec) {
+        rec = new SpeechRecognition();
+        rec.lang = 'th-TH'; rec.interimResults = false; rec.continuous = false;
+        rec.onstart = () => { listening = true; setStatus('กำลังฟัง…'); };
+        rec.onend = () => { listening = false; setStatus(''); };
+        rec.onresult = (ev) => {
+          const text = ev.results[0][0].transcript.trim();
+          const lower = toLower(text);
+          
+          let q = lower.replace(/^(เมนู|อยากทำ|ทำ|อยากกิน)\s*/, '').trim();
+          if (!q) q = lower;
+          document.getElementById('q').value = q;
+          run(q);
+        };
+      }
+      return rec;
+    }
+    document.getElementById('mic').addEventListener('click', () => {
+      const r = ensureRec(); if (!r) return;
+      if (listening) r.stop(); else try { r.start(); } catch (e) { }
+    });
+
+
+    async function run(q) {
+      if (!q) {               
+        document.getElementById('daily').style.display = 'block';
+        document.getElementById('result').style.display = 'none';
+        return;
+      }
+
+      
+      document.getElementById('daily').style.display = 'none';
+
+      const data = await get(`{% url 'api_recipe_suggest' %}?q=${encodeURIComponent(q)}`);
+      if (!data.ok) { alert(data.error || 'หาเมนูไม่พบ'); return; }
+
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('dish').textContent = data.dish;
+
+      const allBox = document.getElementById('all'); allBox.innerHTML = '';
+      const haveBox = document.getElementById('have'); haveBox.innerHTML = '';
+      const missBox = document.getElementById('missing'); missBox.innerHTML = '';
+
+      (data.ingredients || []).forEach(x => allBox.appendChild(pill(x, '')));
+      (data.have || []).forEach(x => haveBox.appendChild(pill(x, 'have')));
+      (data.missing || []).forEach(x => missBox.appendChild(pill(x, 'missing')));
+    }
+
+    
+    document.getElementById('go').addEventListener('click', () => run(document.getElementById('q').value.trim()));
+
+    
+    const qInput = document.getElementById('q');
+    qInput.addEventListener('input', () => {
+      const v = qInput.value.trim();
+      if (v === '') {
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('daily').style.display = 'block';
+      }
+    });
+
+    
+    qInput.addEventListener('keydown', e => { if (e.key === 'Enter') run(e.target.value.trim()); });
+    
+    async function loadDailyRecs() {
+      try {
+        const res = await fetch("{% url 'api_daily_recs' %}", { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const items = await res.json(); 
+
+        const wrap = document.getElementById('dailyGrid');
+        wrap.innerHTML = "";
+
+        (items || []).slice(0, 6).forEach(it => {
+          const card = document.createElement('div');
+          card.className = "rec-card";
+          card.style.cssText = "background:#fff;border:1px solid #e6f0ff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.04)";
+
+          const imgHtml = it.image
+            ? `<img src="${it.image}" alt="${(it.title || '').replace(/"/g, '&quot;')}" style="width:100%;height:140px;object-fit:cover;">`
+            : "";
+
+          const used = (it.used || []).map(x => `<span class="pill have">${x}</span>`).join(' ');
+          const miss = (it.missing || []).map(x => `<span class="pill missing">${x}</span>`).join(' ');
+
+          card.innerHTML = `
+          ${imgHtml}
+          <div style="padding:10px 12px;">
+            <div style="font-weight:600;margin-bottom:6px;">${(it.title || '').replace(/</g, '&lt;')}</div>
+            <div style="font-size:12px;margin-top:6px;">ใช้ของที่มี: ${used || '-'}</div>
+            <div style="font-size:12px;margin-top:6px;">ยังขาด: ${miss || '-'}</div>
+            <div class="btnrow" style="margin-top:10px;display:flex;gap:8px;"></div>
+          </div>
+        `;
+
+          wrap.appendChild(card);
+        });
+      } catch (e) {
+        console.warn("daily recs error:", e);
+        document.getElementById('dailyGrid').innerHTML =
+          `<div style="grid-column:1/-1;color:#C62828;">โหลดเมนูแนะนำไม่สำเร็จ</div>`;
+      }
+    }
+
+    
+    document.addEventListener('DOMContentLoaded', loadDailyRecs);
+  </script>
+
+</body>
+
+</html>
