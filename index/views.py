@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ingredient, IngredientImage
 from datetime import date , timedelta , datetime 
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, Http404
 from django.views.decorators.http import require_POST
 import json 
 from django.conf import settings
