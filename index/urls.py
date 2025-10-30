@@ -5,6 +5,8 @@ urlpatterns = [
     path('api/howto/', views.api_howto, name='api_howto'),
     path('api/recipes/', views.api_recipes, name='api_recipes'),
 
+    path("api/daily_local_recs/", views.api_daily_recs_local, name="api_daily_recs_local"),
+
     path('', views.index, name='index'),
     path('delete/<int:ingredient_id>/', views.delete_ingredient, name='delete_ingredient'),
     path('add/', views.add_ingredient, name='add_ingredient'),  

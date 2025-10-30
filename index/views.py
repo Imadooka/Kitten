@@ -1037,6 +1037,43 @@ def score_local(recipes, ing_names_th):
     scored.sort(key=lambda x: x["score"], reverse=True)
     return scored
 
+
+@require_GET
+def api_daily_recs_local(request):
+    """
+    คืน 6 เมนูจาก thai_recipes.json โดย:
+      - พิจารณาวัตถุดิบในสต็อก (ของจริงใน DB)
+      - ให้ความสำคัญกับวัตถุดิบที่ใกล้หมดอายุก่อน (เหมือน api_daily_recs)
+      - คำนวณ used / missing ให้เรียบร้อย
+    รูปแบบผลลัพธ์: [{"title","image","used":[...],"missing":[...],"source":"local"}, ...]
+    """
+    # 1) ดึงวัตถุดิบทั้งหมด เรียงใกล้หมดก่อน
+    ings = list(Ingredient.objects.all())
+    if not ings:
+        return JsonResponse([], safe=False)
+
+    ings_sorted = sorted(ings, key=lambda x: ingredient_days_remaining(x.expiry_date))
+
+    # เลือก top-k เป็นชุด seed เพื่อชี้นำเมนู (8 รายการแรก)
+    seed = ings_sorted[:8]
+    ing_names_th = [i.name for i in seed if (i.quantity or 0) > 0]
+
+    # 2) โหลดสูตรจากไฟล์ local และให้คะแนนตามวัตถุดิบที่ “มี”
+    local = load_local_recipes()  # list ของ recipe dict
+    scored = score_local(local, ing_names_th)  # ใส่ score, used, missing
+
+    # 3) สร้างผลลัพธ์ 6 รายการแรก
+    out = []
+    for it in scored[:3]:
+        out.append({
+            "title": it.get("title"),
+            "image": it.get("image"),
+            "used": it.get("used", []),
+            "missing": it.get("missing", []),
+            "source": "local",
+        })
+    return JsonResponse(out, safe=False)
+
 def api_daily_recs(request):
     """
     คืน 6 เมนูแนะนำประจำวันตามวัตถุดิบที่มี + ใกล้หมดอายุ

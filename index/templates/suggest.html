@@ -440,37 +440,22 @@
           console.warn('daily recs API error:', e);
         }
 
-        // --- 2) จาก Local (thai_recipes.json) + คำนวณ have/missing ด้วย suggest ---
+        // --- 2) จาก Local (thai_recipes.json) แบบให้ความสำคัญของใกล้หมดอายุ ---
         try {
-          const r2 = await fetch(window.THAI_RECIPES_STATIC, { headers: { 'Accept': 'application/json' } });
-          if (!r2.ok) throw new Error("HTTP " + r2.status);
-          const arr = await r2.json(); // expected: [{name, ingredients:[...]}]
+          const rLocal = await fetch("{% url 'api_daily_recs_local' %}", { headers: { 'Accept': 'application/json' } });
+          if (!rLocal.ok) throw new Error("HTTP " + rLocal.status);
+          const itemsLocal = await rLocal.json();
 
-          const picks = (arr || []).slice(0, 3);
-          if (!picks.length) {
+          if (!(itemsLocal || []).length) {
             const msg = document.createElement('div');
             msg.style.gridColumn = '1/-1'; msg.style.color = '#64748b';
             msg.textContent = 'ไม่มีเมนูจาก Local';
             wrapLocal.appendChild(msg);
           } else {
-            for (const x of picks) {
-              const title = x.name;
-              let have = [], missing = [], image = '';
-
-              try {
-                const sRes = await fetch(`{% url 'api_recipe_suggest' %}?q=${encodeURIComponent(title)}`,
-                  { headers: { 'Accept': 'application/json' } });
-                const s = await sRes.json().catch(() => ({}));
-                if (sRes.ok) {
-                  have = Array.isArray(s.have) ? s.have : [];
-                  missing = Array.isArray(s.missing) ? s.missing : [];
-                  image = s.image || '';
-                }
-              } catch { }
-
-              const it = { title, used: have, missing, source: 'local', image, steps: [] };
+            itemsLocal.forEach(it => {
+              it.source = 'local';
               wrapLocal.appendChild(makeCard(it));
-            }
+            });
           }
         } catch (e) {
           const msg = document.createElement('div');
@@ -481,297 +466,297 @@
         }
       }
 
-      document.addEventListener('DOMContentLoaded', loadDailyRecs);
+        document.addEventListener('DOMContentLoaded', loadDailyRecs);
 
-      // สร้างปุ่มดูวิธีทำข้างชื่อเมนู (ลบของเก่าก่อนกันซ้อน)
-      const dishEl = document.getElementById('dish');
-      const oldBtn = dishEl.querySelector('.btn-howto');
-      if (oldBtn) oldBtn.remove();
+        // สร้างปุ่มดูวิธีทำข้างชื่อเมนู (ลบของเก่าก่อนกันซ้อน)
+        const dishEl = document.getElementById('dish');
+        const oldBtn = dishEl.querySelector('.btn-howto');
+        if (oldBtn) oldBtn.remove();
 
-      const btnCloseEl = document.getElementById('btnClose');
-      if (btnCloseEl) btnCloseEl.addEventListener('click', closeHowto);
+        const btnCloseEl = document.getElementById('btnClose');
+        if (btnCloseEl) btnCloseEl.addEventListener('click', closeHowto);
 
-      const btnSpeakEl = document.getElementById('btnSpeak');
-      if (btnSpeakEl) btnSpeakEl.addEventListener('click', speakHowto);
+        const btnSpeakEl = document.getElementById('btnSpeak');
+        if (btnSpeakEl) btnSpeakEl.addEventListener('click', speakHowto);
 
-      // ปิดเมื่อคลิกที่ backdrop
-      const howtoModal = document.getElementById('howtoModal');
-      if (howtoModal) {
-        howtoModal.addEventListener('click', (e) => {
+        // ปิดเมื่อคลิกที่ backdrop
+        const howtoModal = document.getElementById('howtoModal');
+        if (howtoModal) {
+          howtoModal.addEventListener('click', (e) => {
+            if (e.target.id === 'howtoModal') closeHowto();
+          });
+        }
+
+        // ====== Modal basic ======
+        function closeHowto() {
+          document.getElementById('howtoModal').style.display = 'none';
+          stopSpeak();
+        }
+        document.getElementById('btnClose').addEventListener('click', closeHowto);
+        document.getElementById('howtoModal').addEventListener('click', (e) => {
           if (e.target.id === 'howtoModal') closeHowto();
         });
-      }
 
-      // ====== Modal basic ======
-      function closeHowto() {
-        document.getElementById('howtoModal').style.display = 'none';
-        stopSpeak();
-      }
-      document.getElementById('btnClose').addEventListener('click', closeHowto);
-      document.getElementById('howtoModal').addEventListener('click', (e) => {
-        if (e.target.id === 'howtoModal') closeHowto();
-      });
-
-      async function fetchHowto(dishName) {
-        const url = HOWTO_URL + "?q=" + encodeURIComponent(dishName);
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        const data = await res.json();
-        if (!res.ok || data.ok === false) {
-          throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
-        }
-        return data;
-      }
-
-      function _normalizeName(s) {
-        return (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
-      }
-
-      async function fetchHowtoFromStatic(dishName) {
-        const res = await fetch(window.HOWTO_STATIC, { headers: { 'Accept': 'application/json' } });
-        const data = await res.json();
-        const want = _normalizeName(dishName);
-
-        // รองรับโครงสร้างที่มี wrapper "recipes"
-        let root = data;
-        if (root && typeof root === 'object' && !Array.isArray(root) &&
-          root.recipes && typeof root.recipes === 'object') {
-          root = root.recipes;
-        }
-
-        let found = null;
-
-        // 1) object map
-        if (root && typeof root === 'object' && !Array.isArray(root)) {
-          for (const k of Object.keys(root)) {
-            if (_normalizeName(k) === want) { found = root[k]; break; }
+        async function fetchHowto(dishName) {
+          const url = HOWTO_URL + "?q=" + encodeURIComponent(dishName);
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          if (!res.ok || data.ok === false) {
+            throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
           }
-          if (!found) {
-            for (const v of Object.values(root)) {
-              const t = _normalizeName(v?.title || v?.name || '');
-              if (t === want) { found = v; break; }
+          return data;
+        }
+
+        function _normalizeName(s) {
+          return (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
+        }
+
+        async function fetchHowtoFromStatic(dishName) {
+          const res = await fetch(window.HOWTO_STATIC, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          const want = _normalizeName(dishName);
+
+          // รองรับโครงสร้างที่มี wrapper "recipes"
+          let root = data;
+          if (root && typeof root === 'object' && !Array.isArray(root) &&
+            root.recipes && typeof root.recipes === 'object') {
+            root = root.recipes;
+          }
+
+          let found = null;
+
+          // 1) object map
+          if (root && typeof root === 'object' && !Array.isArray(root)) {
+            for (const k of Object.keys(root)) {
+              if (_normalizeName(k) === want) { found = root[k]; break; }
+            }
+            if (!found) {
+              for (const v of Object.values(root)) {
+                const t = _normalizeName(v?.title || v?.name || '');
+                if (t === want) { found = v; break; }
+              }
             }
           }
-        }
 
-        // 2) array
-        if (!found && Array.isArray(root)) {
-          found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
-        }
-
-        // 3) {items:[...]}
-        if (!found && root && Array.isArray(root.items)) {
-          found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
-        }
-
-        if (!found) throw new Error('ไม่พบวิธีทำในไฟล์');
-
-        return {
-          title: found.title || found.name || dishName,
-          ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
-          steps: Array.isArray(found.steps) ? found.steps : [],
-          videos: Array.isArray(found.videos) ? found.videos : []
-        };
-      }
-
-      function buildYTHowtoLink(dishName) {
-        const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-        return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-      }
-
-      // ====== เปิดโมดัล + ใส่ข้อมูล ======
-      async function openHowto(dishName) {
-        try {
-          const data = await fetchHowto(dishName);
-
-          document.getElementById('howtoTitle').textContent = data.title || dishName;
-
-          const ing = Array.isArray(data.ingredients) ? data.ingredients : [];
-          document.getElementById('howtoIngredients').innerHTML =
-            ing.length ? "วัตถุดิบ: " + ing.join(", ") : "";
-
-          const stepsWrap = document.getElementById('howtoSteps');
-          stepsWrap.innerHTML = "";
-          const steps = Array.isArray(data.steps) ? data.steps : [];
-          if (steps.length) {
-            steps.forEach(s => {
-              const li = document.createElement('li');
-              li.textContent = s;
-              stepsWrap.appendChild(li);
-            });
-          } else {
-            const li = document.createElement('li');
-            li.textContent = "ยังไม่มีขั้นตอนในระบบ";
-            stepsWrap.appendChild(li);
+          // 2) array
+          if (!found && Array.isArray(root)) {
+            found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
           }
 
-          const links = document.getElementById('howtoLinks');
-          links.innerHTML = "";
-          const vids = Array.isArray(data.videos) ? data.videos : [];
-          vids.forEach(v => {
-            const a = document.createElement('a');
-            a.href = v.url; a.target = "_blank"; a.rel = "noopener";
-            a.textContent = v.title || v.url;
-            a.style.display = "inline-block";
-            a.style.marginRight = "8px";
-            links.appendChild(a);
+          // 3) {items:[...]}
+          if (!found && root && Array.isArray(root.items)) {
+            found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
+          }
+
+          if (!found) throw new Error('ไม่พบวิธีทำในไฟล์');
+
+          return {
+            title: found.title || found.name || dishName,
+            ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
+            steps: Array.isArray(found.steps) ? found.steps : [],
+            videos: Array.isArray(found.videos) ? found.videos : []
+          };
+        }
+
+        function buildYTHowtoLink(dishName) {
+          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
+          return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
+        }
+
+        // ====== เปิดโมดัล + ใส่ข้อมูล ======
+        async function openHowto(dishName) {
+          try {
+            const data = await fetchHowto(dishName);
+
+            document.getElementById('howtoTitle').textContent = data.title || dishName;
+
+            const ing = Array.isArray(data.ingredients) ? data.ingredients : [];
+            document.getElementById('howtoIngredients').innerHTML =
+              ing.length ? "วัตถุดิบ: " + ing.join(", ") : "";
+
+            const stepsWrap = document.getElementById('howtoSteps');
+            stepsWrap.innerHTML = "";
+            const steps = Array.isArray(data.steps) ? data.steps : [];
+            if (steps.length) {
+              steps.forEach(s => {
+                const li = document.createElement('li');
+                li.textContent = s;
+                stepsWrap.appendChild(li);
+              });
+            } else {
+              const li = document.createElement('li');
+              li.textContent = "ยังไม่มีขั้นตอนในระบบ";
+              stepsWrap.appendChild(li);
+            }
+
+            const links = document.getElementById('howtoLinks');
+            links.innerHTML = "";
+            const vids = Array.isArray(data.videos) ? data.videos : [];
+            vids.forEach(v => {
+              const a = document.createElement('a');
+              a.href = v.url; a.target = "_blank"; a.rel = "noopener";
+              a.textContent = v.title || v.url;
+              a.style.display = "inline-block";
+              a.style.marginRight = "8px";
+              links.appendChild(a);
+            });
+
+            document.getElementById('howtoModal').style.display = 'flex';
+          } catch (e) {
+            alert("โหลดวิธีทำไม่สำเร็จ: " + (e.message || e));
+          }
+        }
+
+        // ====== TTS ภาษาไทย ======
+        let _ttsQueue = [];
+        let _ttsSpeaking = false;
+        let _thaiVoice = null;
+
+        function pickThaiVoice() {
+          const list = speechSynthesis.getVoices() || [];
+          // พยายามหาที่เป็น th-TH ก่อน
+          _thaiVoice = list.find(v => /th(-|_)?TH/i.test(v.lang)) ||
+            list.find(v => /Thai|ไทย/i.test(v.name)) ||
+            null;
+        }
+
+        function speakHowto() {
+          if (!('speechSynthesis' in window)) { alert('เบราว์เซอร์ไม่รองรับเสียงพูด'); return; }
+          stopSpeak();
+
+          if (!_thaiVoice) {
+            // บางบราวเซอร์ต้องรอ voicesloaded
+            if (speechSynthesis.onvoiceschanged === null) {
+              speechSynthesis.onvoiceschanged = () => {
+                pickThaiVoice();
+                speechSynthesis.onvoiceschanged = null;
+                speakHowto(); // ลองใหม่
+              };
+            }
+            pickThaiVoice(); // ลองหยิบก่อน
+          }
+
+          const title = document.getElementById('howtoTitle')?.textContent || '';
+          const ingText = document.getElementById('howtoIngredients')?.textContent || '';
+          const steps = Array.from(document.querySelectorAll('#howtoSteps li')).map(li => li.textContent);
+
+          const parts = [];
+          if (title) parts.push(`เมนู: ${title}`);
+          if (ingText) parts.push(ingText);
+          if (steps.length) {
+            parts.push('ขั้นตอนการทำ:');
+            steps.forEach((s, i) => parts.push(`ขั้นตอนที่ ${i + 1} ${s}`));
+          }
+
+          _ttsQueue = parts.map(t => {
+            const u = new SpeechSynthesisUtterance(t);
+            u.lang = 'th-TH';
+            if (_thaiVoice) u.voice = _thaiVoice;
+            u.rate = 1.0;
+            return u;
           });
 
-          document.getElementById('howtoModal').style.display = 'flex';
-        } catch (e) {
-          alert("โหลดวิธีทำไม่สำเร็จ: " + (e.message || e));
+          _ttsSpeaking = true;
+          speakNext();
         }
-      }
 
-      // ====== TTS ภาษาไทย ======
-      let _ttsQueue = [];
-      let _ttsSpeaking = false;
-      let _thaiVoice = null;
+        function speakNext() {
+          if (!_ttsSpeaking || _ttsQueue.length === 0) { _ttsSpeaking = false; return; }
+          const u = _ttsQueue.shift();
+          u.onend = () => speakNext();
+          u.onerror = () => speakNext();
+          speechSynthesis.speak(u);
+        }
 
-      function pickThaiVoice() {
-        const list = speechSynthesis.getVoices() || [];
-        // พยายามหาที่เป็น th-TH ก่อน
-        _thaiVoice = list.find(v => /th(-|_)?TH/i.test(v.lang)) ||
-          list.find(v => /Thai|ไทย/i.test(v.name)) ||
-          null;
-      }
+        function stopSpeak() {
+          if (!('speechSynthesis' in window)) return;
+          _ttsSpeaking = false;
+          _ttsQueue = [];
+          speechSynthesis.cancel();
+        }
 
-      function speakHowto() {
-        if (!('speechSynthesis' in window)) { alert('เบราว์เซอร์ไม่รองรับเสียงพูด'); return; }
-        stopSpeak();
+        // === 1) เปิด YouTube ค้นหา "ชื่อเมนู วิธีทำ"
+        function openYTHowto(dishName) {
+          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
+          const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
+          try { window.open(url, '_blank', 'noopener'); } catch { location.href = url; }
+        }
 
-        if (!_thaiVoice) {
-          // บางบราวเซอร์ต้องรอ voicesloaded
-          if (speechSynthesis.onvoiceschanged === null) {
-            speechSynthesis.onvoiceschanged = () => {
-              pickThaiVoice();
-              speechSynthesis.onvoiceschanged = null;
-              speakHowto(); // ลองใหม่
-            };
+        // === 2) ดึง HOWTO จาก Local (API ของคุณ)
+        async function fetchHowtoLocal(dishName) {
+          const url = `{% url 'api_howto' %}?q=${encodeURIComponent(dishName)}`;
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.ok === false) throw new Error(data.error || `ไม่พบวิธีทำ: ${dishName}`);
+          return data; // shape: { ok, title, ingredients, steps, videos? }
+        }
+
+        // === 3) เปิด HOWTO แบบ “ฉลาด”:
+        //    - ถ้า source = "local" → เปิด Local เสมอ
+        //    - ถ้า source = "api"   → เปิด YouTube ทันที
+        //    - ถ้าไม่รู้แหล่งที่มา → พยายามโหลด Local ก่อน, ถ้าไม่เจอค่อยเปิด YouTube
+        async function openHowtoSmart(dishName, source) {
+          const s = (source || '').toLowerCase();
+          if (s === 'api') {
+            return openYTHowto(dishName);
           }
-          pickThaiVoice(); // ลองหยิบก่อน
-        }
-
-        const title = document.getElementById('howtoTitle')?.textContent || '';
-        const ingText = document.getElementById('howtoIngredients')?.textContent || '';
-        const steps = Array.from(document.querySelectorAll('#howtoSteps li')).map(li => li.textContent);
-
-        const parts = [];
-        if (title) parts.push(`เมนู: ${title}`);
-        if (ingText) parts.push(ingText);
-        if (steps.length) {
-          parts.push('ขั้นตอนการทำ:');
-          steps.forEach((s, i) => parts.push(`ขั้นตอนที่ ${i + 1} ${s}`));
-        }
-
-        _ttsQueue = parts.map(t => {
-          const u = new SpeechSynthesisUtterance(t);
-          u.lang = 'th-TH';
-          if (_thaiVoice) u.voice = _thaiVoice;
-          u.rate = 1.0;
-          return u;
-        });
-
-        _ttsSpeaking = true;
-        speakNext();
-      }
-
-      function speakNext() {
-        if (!_ttsSpeaking || _ttsQueue.length === 0) { _ttsSpeaking = false; return; }
-        const u = _ttsQueue.shift();
-        u.onend = () => speakNext();
-        u.onerror = () => speakNext();
-        speechSynthesis.speak(u);
-      }
-
-      function stopSpeak() {
-        if (!('speechSynthesis' in window)) return;
-        _ttsSpeaking = false;
-        _ttsQueue = [];
-        speechSynthesis.cancel();
-      }
-
-      // === 1) เปิด YouTube ค้นหา "ชื่อเมนู วิธีทำ"
-      function openYTHowto(dishName) {
-        const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-        const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-        try { window.open(url, '_blank', 'noopener'); } catch { location.href = url; }
-      }
-
-      // === 2) ดึง HOWTO จาก Local (API ของคุณ)
-      async function fetchHowtoLocal(dishName) {
-        const url = `{% url 'api_howto' %}?q=${encodeURIComponent(dishName)}`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) throw new Error(data.error || `ไม่พบวิธีทำ: ${dishName}`);
-        return data; // shape: { ok, title, ingredients, steps, videos? }
-      }
-
-      // === 3) เปิด HOWTO แบบ “ฉลาด”:
-      //    - ถ้า source = "local" → เปิด Local เสมอ
-      //    - ถ้า source = "api"   → เปิด YouTube ทันที
-      //    - ถ้าไม่รู้แหล่งที่มา → พยายามโหลด Local ก่อน, ถ้าไม่เจอค่อยเปิด YouTube
-      async function openHowtoSmart(dishName, source) {
-        const s = (source || '').toLowerCase();
-        if (s === 'api') {
-          return openYTHowto(dishName);
-        }
-        if (s === 'local') {
+          if (s === 'local') {
+            try {
+              const data = await fetchHowtoLocal(dishName);
+              return renderHowtoModal(data); // ใช้ตัวเรนเดอร์เดิมของคุณ
+            } catch (e) {
+              alert(e.message || e);
+              return;
+            }
+          }
+          // ไม่รู้ที่มา → ลอง Local ก่อน แล้วค่อย fallback ไป YouTube
           try {
             const data = await fetchHowtoLocal(dishName);
-            return renderHowtoModal(data); // ใช้ตัวเรนเดอร์เดิมของคุณ
-          } catch (e) {
-            alert(e.message || e);
-            return;
-          }
-        }
-        // ไม่รู้ที่มา → ลอง Local ก่อน แล้วค่อย fallback ไป YouTube
-        try {
-          const data = await fetchHowtoLocal(dishName);
-          return renderHowtoModal(data);
-        } catch {
-          return openYTHowto(dishName);
-        }
-      }
-
-      // === 4) ตัวเรนเดอร์โมดัลเดิม (ถ้าคุณมีอยู่แล้ว ให้เรียกของเดิมได้เลย)
-      function renderHowtoModal(data) {
-        // ตัวอย่างเรนเดอร์อย่างย่อ (แทนที่ด้วย modal ของคุณ)
-        document.getElementById('howtoTitle').textContent = data.title || '';
-        document.getElementById('howtoIngredients').textContent =
-          Array.isArray(data.ingredients) && data.ingredients.length
-            ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
-            : '';
-        const stepsWrap = document.getElementById('howtoSteps');
-        stepsWrap.innerHTML = '';
-        (data.steps || []).forEach(s => {
-          const li = document.createElement('li');
-          li.textContent = s;
-          stepsWrap.appendChild(li);
-        });
-        const links = document.getElementById('howtoLinks');
-        links.innerHTML = '';
-        (data.videos || []).forEach(v => {
-          const a = document.createElement('a');
-          a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
-          a.textContent = v.title || v.url;
-          a.style.marginRight = '8px';
-          links.appendChild(a);
-        });
-        document.getElementById('howtoModal').style.display = 'flex';
-      }
-
-      function renderCard(recipe) {
-        // แยกวัตถุดิบที่มี/ขาด
-        const have = [], missing = [];
-        for (const ing of recipe.ingredients || []) {
-          if (window.CURRENT_INGREDIENTS.includes(ing)) {
-            have.push(ing);
-          } else {
-            missing.push(ing);
+            return renderHowtoModal(data);
+          } catch {
+            return openYTHowto(dishName);
           }
         }
 
-        return `
+        // === 4) ตัวเรนเดอร์โมดัลเดิม (ถ้าคุณมีอยู่แล้ว ให้เรียกของเดิมได้เลย)
+        function renderHowtoModal(data) {
+          // ตัวอย่างเรนเดอร์อย่างย่อ (แทนที่ด้วย modal ของคุณ)
+          document.getElementById('howtoTitle').textContent = data.title || '';
+          document.getElementById('howtoIngredients').textContent =
+            Array.isArray(data.ingredients) && data.ingredients.length
+              ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
+              : '';
+          const stepsWrap = document.getElementById('howtoSteps');
+          stepsWrap.innerHTML = '';
+          (data.steps || []).forEach(s => {
+            const li = document.createElement('li');
+            li.textContent = s;
+            stepsWrap.appendChild(li);
+          });
+          const links = document.getElementById('howtoLinks');
+          links.innerHTML = '';
+          (data.videos || []).forEach(v => {
+            const a = document.createElement('a');
+            a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
+            a.textContent = v.title || v.url;
+            a.style.marginRight = '8px';
+            links.appendChild(a);
+          });
+          document.getElementById('howtoModal').style.display = 'flex';
+        }
+
+        function renderCard(recipe) {
+          // แยกวัตถุดิบที่มี/ขาด
+          const have = [], missing = [];
+          for (const ing of recipe.ingredients || []) {
+            if (window.CURRENT_INGREDIENTS.includes(ing)) {
+              have.push(ing);
+            } else {
+              missing.push(ing);
+            }
+          }
+
+          return `
     <div class="card">
       <div class="card-body">
         <h3>${recipe.name}</h3>
@@ -789,74 +774,74 @@
       </div>
     </div>
   `;
-      }
-      // สร้างลิงก์ YouTube (ไม่เปิด popup ทันที)
-      function buildYTHowtoLink(dishName) {
-        const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-        return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-      }
-
-      function renderHowtoModal(data, fallbackDishName) {
-        const titleEl = document.getElementById('howtoTitle');
-        const ingEl = document.getElementById('howtoIngredients');
-        const stepsWrap = document.getElementById('howtoSteps');
-        const links = document.getElementById('howtoLinks');
-
-        const dish = data.title || fallbackDishName || '';
-        titleEl.textContent = dish;
-
-        ingEl.textContent = Array.isArray(data.ingredients) && data.ingredients.length
-          ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
-          : '';
-
-        stepsWrap.innerHTML = '';
-        const steps = Array.isArray(data.steps) ? data.steps : [];
-        if (steps.length) {
-          steps.forEach(s => {
-            const li = document.createElement('li');
-            li.textContent = s;
-            stepsWrap.appendChild(li);
-          });
-        } else {
-          const li = document.createElement('li');
-          li.textContent = 'ยังไม่มีขั้นตอนในระบบ';
-          stepsWrap.appendChild(li);
+        }
+        // สร้างลิงก์ YouTube (ไม่เปิด popup ทันที)
+        function buildYTHowtoLink(dishName) {
+          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
+          return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
         }
 
-        // ✔ ปุ่มไปดูบน YouTube (มีเสมอ)
-        links.innerHTML = '';
-        const ytBtn = document.createElement('a');
-        ytBtn.href = buildYTHowtoLink(dish);
-        ytBtn.target = '_blank';
-        ytBtn.rel = 'noopener';
-        ytBtn.className = 'btn-primary';
-        ytBtn.style.display = 'inline-block';
-        ytBtn.style.marginTop = '8px';
-        ytBtn.textContent = 'ไปดูบน YouTube';
-        links.appendChild(ytBtn);
+        function renderHowtoModal(data, fallbackDishName) {
+          const titleEl = document.getElementById('howtoTitle');
+          const ingEl = document.getElementById('howtoIngredients');
+          const stepsWrap = document.getElementById('howtoSteps');
+          const links = document.getElementById('howtoLinks');
 
-        document.getElementById('howtoModal').style.display = 'flex';
-      }
+          const dish = data.title || fallbackDishName || '';
+          titleEl.textContent = dish;
 
-      async function openHowtoSmart(dishName, source) {
-        // 1) ลอง API (กรณี backend รวมไฟล์ให้)
-        try {
-          const data = await fetchHowto(dishName);
-          return renderHowtoModal(data, dishName);
-        } catch (_) { }
+          ingEl.textContent = Array.isArray(data.ingredients) && data.ingredients.length
+            ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
+            : '';
 
-        // 2) ไม่เจอ → ลองอ่านไฟล์ทั้งหมด
-        try {
-          const data = await fetchHowtoFromStatic(dishName);
-          return renderHowtoModal(data, dishName);
-        } catch (_) { }
+          stepsWrap.innerHTML = '';
+          const steps = Array.isArray(data.steps) ? data.steps : [];
+          if (steps.length) {
+            steps.forEach(s => {
+              const li = document.createElement('li');
+              li.textContent = s;
+              stepsWrap.appendChild(li);
+            });
+          } else {
+            const li = document.createElement('li');
+            li.textContent = 'ยังไม่มีขั้นตอนในระบบ';
+            stepsWrap.appendChild(li);
+          }
 
-        // 3) ไม่เจอทั้งคู่ → เปิดโมดัลว่างพร้อมปุ่ม YouTube
-        return renderHowtoModal({ title: dishName, steps: [] }, dishName);
-      }
+          // ✔ ปุ่มไปดูบน YouTube (มีเสมอ)
+          links.innerHTML = '';
+          const ytBtn = document.createElement('a');
+          ytBtn.href = buildYTHowtoLink(dish);
+          ytBtn.target = '_blank';
+          ytBtn.rel = 'noopener';
+          ytBtn.className = 'btn-primary';
+          ytBtn.style.display = 'inline-block';
+          ytBtn.style.marginTop = '8px';
+          ytBtn.textContent = 'ไปดูบน YouTube';
+          links.appendChild(ytBtn);
 
-      window.openHowtoSmart = openHowtoSmart;
-      window.renderHowtoModal = renderHowtoModal;
+          document.getElementById('howtoModal').style.display = 'flex';
+        }
+
+        async function openHowtoSmart(dishName, source) {
+          // 1) ลอง API (กรณี backend รวมไฟล์ให้)
+          try {
+            const data = await fetchHowto(dishName);
+            return renderHowtoModal(data, dishName);
+          } catch (_) { }
+
+          // 2) ไม่เจอ → ลองอ่านไฟล์ทั้งหมด
+          try {
+            const data = await fetchHowtoFromStatic(dishName);
+            return renderHowtoModal(data, dishName);
+          } catch (_) { }
+
+          // 3) ไม่เจอทั้งคู่ → เปิดโมดัลว่างพร้อมปุ่ม YouTube
+          return renderHowtoModal({ title: dishName, steps: [] }, dishName);
+        }
+
+        window.openHowtoSmart = openHowtoSmart;
+        window.renderHowtoModal = renderHowtoModal;
 
     </script>
 
