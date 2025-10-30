@@ -193,7 +193,7 @@
       <input type="date" name="prepared_date" id="prepared_date" value="{{ today }}" required>
 
       <label for="expiry_date">วันหมดอายุ</label>
-      <input type="date" name="expiry_date" id="expiry_date" required>
+      <input type="date" name="expiry_date" id="expiry_date" required min="{{ today }}">
 
       <label for="image_file">เพิ่มรูปภาพใหม่</label>
       <input type="file" name="image_file" id="image_file" accept="image/*">
@@ -208,28 +208,56 @@
     document.addEventListener("DOMContentLoaded", function () {
       const preparedInput = document.getElementById('prepared_date');
       const expiryInput = document.getElementById('expiry_date');
-      function setExpiry() {
-        const preparedDate = new Date(preparedInput.value);
-        preparedDate.setDate(preparedDate.getDate() + 7);
-        expiryInput.value = preparedDate.toISOString().slice(0, 10);
+
+      // helpers: parse/format วันแบบไม่แตะ timezone
+      function parseISO(iso) {
+        if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+        const [y, m, d] = iso.split('-').map(Number);
+        return { y, m, d };
       }
+      function formatISO(y, m, d) {
+        const z = n => String(n).padStart(2, '0');
+        return `${y}-${z(m)}-${z(d)}`;
+      }
+      function addDaysISO(iso, days) {
+        const p = parseISO(iso);
+        if (!p) return '';
+        // ใช้ Date แต่ป้อนปี/เดือน/วันเป็นตัวเลขท้องถิ่น (ไม่ใช่สตริง ISO)
+        const dt = new Date(p.y, p.m - 1, p.d);
+        dt.setDate(dt.getDate() + days);
+        return formatISO(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+      }
+
+      function ensurePreparedHasValue() {
+        // ถ้ายังไม่มีค่า ให้ตั้งเป็นวันนี้ (รูปแบบ ISO)
+        if (!preparedInput.value) {
+          const now = new Date();
+          preparedInput.value = formatISO(
+            now.getFullYear(), now.getMonth() + 1, now.getDate()
+          );
+        }
+      }
+
+      function setExpiry() {
+        ensurePreparedHasValue();
+        const iso = preparedInput.value;         // ได้เป็น YYYY-MM-DD เสมอจาก <input type="date">
+        const plus7 = addDaysISO(iso, 7);
+        if (plus7) expiryInput.value = plus7;    // ใส่คืนเป็น YYYY-MM-DD โดยไม่ผ่าน toISOString()
+      }
+
       preparedInput.addEventListener('change', setExpiry);
-      setExpiry();
+      setExpiry(); // เซ็ตค่าเริ่มต้นครั้งแรก
 
-
+      // พรีวิวรูป (เดิม)
       const imageInput = document.getElementById('image_file');
       const preview = document.getElementById('preview');
       imageInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
           const reader = new FileReader();
-          reader.onload = function (e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-          }
+          reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
           reader.readAsDataURL(this.files[0]);
         } else {
-          preview.src = '';
-          preview.style.display = 'none';
+          preview.src = ''; preview.style.display = 'none';
         }
       });
     });

@@ -11,8 +11,6 @@ from django.utils import timezone
 from django.db import transaction
 from pathlib import Path
 
-
-
 with open("index/thai_alias.json", "r", encoding="utf-8") as f:
     TH_EN = json.load(f)
 
@@ -298,8 +296,9 @@ def add_ingredient(request):
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()
         quantity = int(request.POST.get("quantity", 1))
-        prepared_s = request.POST.get("prepared_date")
-        expiry_s = request.POST.get("expiry_date")
+        # รับสตริงจากฟอร์ม <input type="date"> จะเป็น ISO 'YYYY-MM-DD'
+        prepared_s = (request.POST.get('prepared_date') or '').strip()
+        expiry_s   = (request.POST.get('expiry_date') or '').strip()
 
         if not name or not prepared_s or not expiry_s:
             return redirect('index')
@@ -316,7 +315,7 @@ def add_ingredient(request):
             img.save()
             image_obj = img
 
-        # ✅ ไม่รวมรายการเดิม — สร้างใหม่ทุกครั้ง
+        #  ไม่รวมรายการเดิม — สร้างใหม่ทุกครั้ง
         shelf_life_days = (expiry_dt - prepared_dt).days
         Ingredient.objects.create(
             name=name,
@@ -328,6 +327,8 @@ def add_ingredient(request):
         return redirect('index')
 
     return render(request, 'add.html', {'today': today})
+
+
 
 @require_POST
 def voice_add_ingredient(request):

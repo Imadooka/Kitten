@@ -842,9 +842,15 @@
 
       async function submitVoicePayload() {
         try {
+          // final guard
+          if (!payload.expiry_date) {
+            const d = new Date(); d.setDate(d.getDate() + 7);
+            payload.expiry_date = d.toISOString().slice(0, 10);
+          }
+
           const res = await fetch("{% url 'voice_add_ingredient' %}", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken, },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
             body: JSON.stringify(payload)
           });
           const data = await res.json();
@@ -857,19 +863,116 @@
         } catch (err) { toast('ผิดพลาด ' + err); speak('เกิดข้อผิดพลาด'); }
       }
 
+      // ---------- ONE-SHOT ADD PARSER ----------
+      function parseOneShotAdd(thText) {
+        // แปลงเลขไทย -> อักษรเล็ก -> ตัดช่องว่างส่วนเกิน
+        const raw = normalizeThaiDigits(thText || "");
+        const t = raw.toLocaleLowerCase('th-TH').replace(/\s+/g, ' ').trim();
+
+        // รองรับคำขึ้นต้น: เพิ่ม | ใส่ | แอด
+        if (!/^(เพิ่ม|ใส่|แอด)/.test(t)) return null;
+        let s = t.replace(/^(?:เพิ่ม|ใส่|แอด)\s*/, '').trim();
+
+        // ดึง "วันหมดอายุ ..." ที่พูดต่อท้าย (ถ้ามี)
+        // เช่น "เพิ่ม แครอท 2 ชิ้น วันหมดอายุ 10 ม.ค. 2569"
+        let dateISO = "";
+        const mDate = s.match(/(?:วันหมดอายุ|หมดอายุ|วันที่|เดท|date)\s+(.+)$/i);
+        if (mDate) {
+          dateISO = parseSpeechDateToISO(mDate[1]);
+          if (dateISO) {
+            s = s.slice(0, mDate.index).trim(); // ตัดส่วนวันที่ออกจากสตริงหลัก
+          }
+        }
+
+        const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
+        const patterns = [
+          new RegExp(`^([^\\d].*?)\\s+(\\d+)\\s*${unit}$`),   // ชื่อก่อน เลขตาม
+          new RegExp(`^(\\d+)\\s*${unit}\\s+(.+?)$`),         // เลขก่อน ชื่อตาม
+          new RegExp(`^(.+?)$`)                               // ชื่ออย่างเดียว
+        ];
+
+        let name = "", qty = 1;
+
+        // ลอง pattern 1
+        let m = s.match(patterns[0]);
+        if (m) {
+          name = (m[1] || "").trim();
+          qty = parseInt(m[2], 10) || 1;
+        } else {
+          // ลอง pattern 2
+          m = s.match(patterns[1]);
+          if (m) {
+            qty = parseInt(m[1], 10) || 1;
+            name = (m[3] || m[2] || "").trim();
+          } else {
+            // ลอง pattern 4 (เช่น "ไข่3ฟอง" -> แยกเลขออก)
+            const glued = s.match(/^([^\d]+?)(\d+)\s*(?:อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?$/);
+            if (glued) {
+              name = glued[1].trim();
+              qty = parseInt(glued[2], 10) || 1;
+            } else {
+              // สุดท้าย: pattern 3 ชื่ออย่างเดียว
+              name = s.trim();
+              qty = 1;
+            }
+          }
+        }
+
+        // ล้างช่องว่างซ้ำ
+        name = name.replace(/\s+/g, ' ').trim();
+        if (!name) return null;
+
+        return { name, quantity: Math.max(1, qty), dateISO }; // dateISO อาจว่างได้
+      }
+
       function handleVoice(text) {
         const t = toThaiLower(text);
+
+        // --- ONE-SHOT ADD: "เพิ่ม แครอท 2 ชิ้น [วันหมดอายุ ...]" ---
+        let addOS = parseOneShotAdd(t);
+        if (addOS) {
+          const today = new Date();
+          const next7 = new Date(); next7.setDate(today.getDate() + 7);
+
+          payload = {
+            name: addOS.name,
+            quantity: addOS.quantity,
+            prepared_date: today.toISOString().slice(0, 10),
+            expiry_date: addOS.dateISO || next7.toISOString().slice(0, 10)
+          };
+
+          if (addOS.dateISO) {
+            wizardState = null;
+            toast(`เพิ่ม: ${payload.name} x${payload.quantity} (หมดอายุ ${payload.expiry_date})`);
+            speak('บันทึกวัตถุดิบแล้ว');
+            submitVoicePayload();
+          } else {
+            wizardState = 'expiry';
+            toast(`เพิ่ม: ${payload.name} x${payload.quantity} | พูดวันหมดอายุ หรือพูด "ข้าม"`);
+            speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม');
+          }
+          return;
+        }
 
         // คำสั่งระบบ
         if (/(หยุดฟัง)/.test(t)) { stopListening(); speak('หยุดฟังแล้ว'); return; }
         if (/(เริ่มฟัง)/.test(t)) { startListening(); return; }
         if (/(รีโหลด|โหลดใหม่|รีเฟรช)/.test(t)) { location.reload(); return; }
 
-        // เริ่มวิซาร์ดเพิ่ม
+        // เริ่มวิซาร์ดเพิ่มแบบเดิม (ชื่อ → จำนวน → วันหมดอายุ)
         if (wizardState === null && /(เพิ่มวัตถุดิบ|เพิ่มของ|เพิ่มใหม่)/.test(t)) {
-          payload = { name: '', quantity: 1, prepared_date: new Date().toISOString().slice(0, 10), expiry_date: '' };
+          const today = new Date();
+          const next7 = new Date(); next7.setDate(today.getDate() + 7);
+          payload = {
+            name: '',
+            quantity: 1,
+            prepared_date: today.toISOString().slice(0, 10),
+            expiry_date: next7.toISOString().slice(0, 10)
+          };
           wizardState = 'name';
-          toast('เริ่มเพิ่มวัตถุดิบ: กรุณาพูดชื่อ'); speak('กรุณาพูดชื่อวัตถุดิบ'); return;
+          toast('เริ่มเพิ่มวัตถุดิบ: กรุณาพูดชื่อ');
+          speak('กรุณาพูดชื่อวัตถุดิบ');
+          return;
         }
         if (wizardState === 'name') {
           let name = t.replace(/^ชื่อ\s*/, '').trim();
@@ -878,8 +981,7 @@
           toast('ได้ชื่อ: ' + name + ' | พูดจำนวน เช่น 3'); speak('ได้ชื่อแล้ว กรุณาพูดจำนวน'); return;
         }
         if (wizardState === 'quantity') {
-          let q = t.replace(/^จำนวน\s*/, '').trim();
-          q = q.replace(/[^0-9]/g, '');
+          let q = t.replace(/^จำนวน\s*/, '').trim().replace(/[^0-9]/g, '');
           const num = parseInt(q || '1', 10) || 1;
           payload.quantity = Math.max(1, num);
           wizardState = 'expiry';
@@ -889,20 +991,30 @@
           speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม'); return;
         }
         if (wizardState === 'expiry') {
-          if (!t.includes('ข้าม')) {
+          const skip = /(ข้าม|ข้ามไป|ไม่ระบุ|ไม่ใส่)/.test(t);
+          if (!skip) {
             let s = t.replace(/^วันหมดอายุ\s*/, '').trim();
-            const parsed = parseIsoDateLike(s);
+            let parsed = parseSpeechDateToISO(s) || parseIsoDateLike(s);
             if (parsed) payload.expiry_date = parsed;
           }
-          wizardState = null; submitVoicePayload(); return;
+          if (!payload.expiry_date) {
+            const d = new Date(); d.setDate(d.getDate() + 7);
+            payload.expiry_date = d.toISOString().slice(0, 10);
+          }
+          wizardState = null;
+          submitVoicePayload();
+          return;
         }
+
 
         // ค้นหา
         let m = t.match(/^(ค้นหา|หา)\s+(.+)$/);
         if (m && m[2]) {
-          const q = m[2].trim(); const box = document.getElementById('searchBox'); if (box) box.value = q;
+          const q = m[2].trim();
+          const box = document.getElementById('searchBox'); if (box) box.value = q;
           filterCardsByQuery(q); toast('ค้นหา: ' + q); speak('กำลังค้นหา'); return;
         }
+
 
         // ----- ลบทั้งหมด / ลบบางส่วน (เวอร์ชันกันพลาดช่องว่าง) -----
         const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
@@ -958,96 +1070,94 @@
         }
 
         toast('ยังไม่รู้จักคำสั่ง: ' + text);
-      }
-      // ====== PROBE: ตรวจว่ามีหลายล็อตไหม (มี endpoint แล้วจะใช้, ไม่มีก็ไม่เป็นไร) ======
-      async function probeLots(name) {
-        try {
-          const res = await fetch(`/api/lots/?name=${encodeURIComponent(name)}`);
-          if (!res.ok) throw 0;
-          return await res.json(); // {ok, lots, has_expired}
-        } catch {
-          return { ok: false }; // ไม่มี endpoint -> ให้ถามเสมอ
-        }
-      }
 
-      // ====== พูด + ฟังคำตอบครั้งเดียว ======
-      function ttsSpeak(text) {
-        if (!('speechSynthesis' in window)) return;
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'th-TH';
-        speechSynthesis.speak(u);
-      }
-
-      function listenOnceTH() {
-        return new Promise((resolve, reject) => {
-          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-          if (!SR) return reject(new Error('no SR'));
-          const r = new SR();
-          r.lang = 'th-TH';
-          r.interimResults = false;
-          r.continuous = false;
-          r.onresult = ev => resolve((ev.results[0][0].transcript || '').trim());
-          r.onerror = e => reject(e);
-          try { r.start(); } catch (e) { reject(e); }
-        });
-      }
-
-      function policyFromThai(answer) {
-        const t = (answer || '').toLowerCase().trim();
-
-        // ไทย
-        if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t)) return { policy: "newest" };
-        if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t)) return { policy: "oldest" };
-        if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t)) return { policy: "nearest_expiry" };
-        if (/(หมดอายุแล้ว|หมดอายุ)/.test(t)) return { policy: "expired_only" };
-
-        // อังกฤษ
-        if (/\b(latest|newest)\b/.test(t)) return { policy: "newest" };
-        if (/\b(oldest)\b/.test(t)) return { policy: "oldest" };
-        if (/\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
-        if (/\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
-
-        // วันที่ (ไทย/อังกฤษ/ISO)
-        let iso = parseSpeechDateToISO(t);
-        if (!iso) {
-          const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/); // รับทุกอย่างหลังคำว่า date/วันที่
-          if (m) iso = parseSpeechDateToISO(m[1]);
-        }
-        if (iso) return { policy: "by_date", target_date: iso };
-
-        return null;
-      }
-
-      // ====== ถ้ามีหลายล็อต -> ถามกลับ แล้วส่งลบด้วย policy ======
-      async function disambiguateAndDelete({ name, amount }) {
-        try {
-          const info = await probeLots(name);
-          const mustAsk = !info.ok || (info.ok && info.lots > 1);
-
-          if (!mustAsk) {
-            // ล็อตเดียว: ลบที่ใกล้หมดอายุ (พูดยืนยันทีหลังใน sendDeleteVoice)
-            return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
+        // ====== PROBE: ตรวจว่ามีหลายล็อตไหม (มี endpoint แล้วจะใช้, ไม่มีก็ไม่เป็นไร) ======
+        async function probeLots(name) {
+          try {
+            const res = await fetch(`/api/lots/?name=${encodeURIComponent(name)}`);
+            if (!res.ok) throw 0;
+            return await res.json(); // {ok, lots, has_expired}
+          } catch {
+            return { ok: false }; // ไม่มี endpoint -> ให้ถามเสมอ
           }
-
-          // ถามกลับ (มีหลายล็อต) 
-          let hint = "Which batch do you want to delete?";
-          if (info.has_expired) hint += ", or 'expired only'";
-          hint += ", or say a specific date like 'date 2025-01-10'";
-          const ans = await speakEN_thenListenTH(hint);
-
-          const pol = policyFromThai(ans);
-          if (!pol) {
-            toast("ยังจับคำตอบไม่ได้ จะใช้แบบใกล้หมดอายุ");
-            return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
-          }
-          return sendDeleteVoice({ name, amount, ...pol });
-
-        } catch (e) {
-          toast("ผิดพลาด: " + (e.message || e));
         }
+
+        // ====== พูด + ฟังคำตอบครั้งเดียว ======
+        function ttsSpeak(text) {
+          if (!('speechSynthesis' in window)) return;
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'th-TH';
+          speechSynthesis.speak(u);
+        }
+
+        function listenOnceTH() {
+          return new Promise((resolve, reject) => {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) return reject(new Error('no SR'));
+            const r = new SR();
+            r.lang = 'th-TH';
+            r.interimResults = false;
+            r.continuous = false;
+            r.onresult = ev => resolve((ev.results[0][0].transcript || '').trim());
+            r.onerror = e => reject(e);
+            try { r.start(); } catch (e) { reject(e); }
+          });
+        }
+
+        function policyFromThai(answer) {
+          const t = (answer || '').toLowerCase().trim();
+
+          // ไทย
+          if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t)) return { policy: "newest" };
+          if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t)) return { policy: "oldest" };
+          if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t)) return { policy: "nearest_expiry" };
+          if (/(หมดอายุแล้ว|หมดอายุ)/.test(t)) return { policy: "expired_only" };
+
+          // อังกฤษ
+          if (/\b(latest|newest)\b/.test(t)) return { policy: "newest" };
+          if (/\b(oldest)\b/.test(t)) return { policy: "oldest" };
+          if (/\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
+          if (/\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
+
+          // วันที่ (ไทย/อังกฤษ/ISO)
+          let iso = parseSpeechDateToISO(t);
+          if (!iso) {
+            const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/); // รับทุกอย่างหลังคำว่า date/วันที่
+            if (m) iso = parseSpeechDateToISO(m[1]);
+          }
+          if (iso) return { policy: "by_date", target_date: iso };
+
+          return null;
+        }
+
+        // ====== ถ้ามีหลายล็อต -> ถามกลับ แล้วส่งลบด้วย policy ======
+        async function disambiguateAndDelete({ name, amount }) {
+          try {
+            const info = await probeLots(name);
+            const mustAsk = !info.ok || (info.ok && info.lots > 1);
+
+            if (!mustAsk) {
+              // ล็อตเดียว: ลบที่ใกล้หมดอายุ (พูดยืนยันทีหลังใน sendDeleteVoice)
+              return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
+            }
+
+            // ถามกลับ (มีหลายล็อต) 
+            let hint = "Which batch do you want to delete?";
+            const ans = await speakEN_thenListenTH(hint);
+
+            const pol = policyFromThai(ans);
+            if (!pol) {
+              toast("ยังจับคำตอบไม่ได้ จะใช้แบบใกล้หมดอายุ");
+              return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
+            }
+            return sendDeleteVoice({ name, amount, ...pol });
+
+          } catch (e) {
+            toast("ผิดพลาด: " + (e.message || e));
+          }
+        }
+
       }
-
-
 
       // === Recipe Modal (Local ก่อน แล้วตามด้วย API) ===
       let currentIngredient = null;
@@ -1433,66 +1543,122 @@
         }
       }
 
-      // ---- แปลงคำพูดเป็นวันที่ ISO (รองรับ ไทย/อังกฤษ/ISO + พ.ศ./ค.ศ.)
-      function parseSpeechDateToISO(s) {
-        if (!s) return "";
-        // แปลงเลขไทยก่อน
-        s = normalizeThaiDigits(String(s)).trim();
-        const t = s.toLowerCase().replace(/\s+/g, " ").trim();
+      function parseSpeechDateToISO(input) {
+        if (!input) return "";
 
-        // ถ้าพูดนำด้วย "วันที่"/"date" ให้ดึงส่วนหลังมา
-        let mm = t.match(/^(?:วันที่|เดท|date)\s*(.+)$/);
-        const core = mm ? mm[1].trim() : t;
+        // --- เตรียมข้อมูล ---
+        const thaiDigits = { '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9' };
+        const normDigits = s => s.replace(/[๐-๙]/g, d => thaiDigits[d] || d);
+        let s = normDigits(String(input)).trim().toLowerCase()
+          .replace(/\s+/g, ' ')
+          .replace(/[\u200B-\u200D\uFEFF]/g, ''); // zero-width
 
-        // 1) YYYY-MM-DD หรือ YYYY/MM/DD
-        let m = core.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-        if (m) {
-          const y = parseInt(m[1], 10);
-          const yy = y > 2400 ? y - 543 : y; // เผื่อใส่ พ.ศ.
-          return `${yy}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+        // ตัดคำบอกเล่า
+        s = s.replace(/^(วันที่|เดท|date)\s*/, '').replace(/(พศ|พ\.ศ\.)/g, 'พศ').replace(/(คศ|ค\.ศ\.)/g, 'คศ');
+
+        const now = new Date();
+        const pad2 = n => String(n).padStart(2, '0');
+
+        // --- คำสัมพัทธ์ ---
+        if (/^วันนี้$/.test(s)) return now.toISOString().slice(0, 10);
+        if (/^พรุ่งนี้$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
+        if (/^มะรืน(นี้)?$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 2); return d.toISOString().slice(0, 10); }
+        if (/^เมื่อวาน$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
+        let mRel = s.match(/^อีก\s*(\d+)\s*(วัน|สัปดาห์|อาทิตย์|เดือน)$/);
+        if (mRel) {
+          const d = new Date(now);
+          const n = parseInt(mRel[1], 10);
+          if (/วัน/.test(mRel[2])) d.setDate(d.getDate() + n);
+          else if (/(สัปดาห์|อาทิตย์)/.test(mRel[2])) d.setDate(d.getDate() + 7 * n);
+          else d.setMonth(d.getMonth() + n);
+          return d.toISOString().slice(0, 10);
         }
 
-        // 2) DD-MM-YYYY หรือ DD/MM/YYYY (อาจเป็น พ.ศ.)
-        m = core.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
-        if (m) {
-          let y = parseInt(m[3], 10);
-          // 2 หลัก → เดาว่า 20xx
-          if (y < 100) y += 2000;
-          if (y > 2400) y -= 543; // พ.ศ.
-          return `${String(y)}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
-        }
-
-        // 3) English month names: "10 January 2025" / "January 10 2025"
-        const en = {
-          jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
-          january: 1, february: 2, march: 3, april: 4, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+        // --- เดือน (ไทย/อังกฤษ/แบบพูดติดปาก) ---
+        const TH_MONTHS = {
+          'มกราคม': 1, 'ม.ค.': 1, 'มค': 1, 'มกรา': 1,
+          'กุมภาพันธ์': 2, 'ก.พ.': 2, 'กพ': 2,
+          'มีนาคม': 3, 'มี.ค.': 3, 'มีค': 3, 'มีนา': 3,
+          'เมษายน': 4, 'เม.ย.': 4, 'เมย': 4,
+          'พฤษภาคม': 5, 'พ.ค.': 5, 'พค': 5,
+          'มิถุนายน': 6, 'มิ.ย.': 6, 'มิย': 6,
+          'กรกฎาคม': 7, 'ก.ค.': 7, 'กค': 7, 'กรกฎา': 7, 'กรา': 7,
+          'สิงหาคม': 8, 'ส.ค.': 8, 'สค': 8, 'สิงหา': 8,
+          'กันยายน': 9, 'ก.ย.': 9, 'กย': 9, 'กันยา': 9,
+          'ตุลาคม': 10, 'ต.ค.': 10, 'ตค': 10, 'ตุลา': 10,
+          'พฤศจิกายน': 11, 'พ.ย.': 11, 'พย': 11, 'พฤศจิกา': 11,
+          'ธันวาคม': 12, 'ธ.ค.': 12, 'ธค': 12, 'ธันวา': 12
         };
-        m = core.match(/^(?:(\d{1,2})\s+([a-z]+)\s+(\d{2,4})|([a-z]+)\s+(\d{1,2})\s+(\d{2,4}))$/i);
+        const EN_MONTHS = {
+          jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
+          jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+          oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+        };
+
+        // helper ตัด พ.ศ./ค.ศ.
+        const normalizeYear = (yRaw, preferBuddhist = true) => {
+          let y = parseInt(yRaw, 10);
+          if (isNaN(y)) return null;
+          // มีคีย์เวิร์ดค.ศ./พ.ศ. ก็จัดให้ชัด
+          if (/คศ/.test(s)) { if (y < 100) y += 2000; return y; }
+          if (/พศ/.test(s)) { if (y < 100) y += 2500; if (y < 2400) y += 543; return y; }
+          // ไม่มีคีย์เวิร์ด → เดา: 2 หลักให้เป็น ค.ศ. 20xx, 4 หลัก > 2400 ให้ลบ 543
+          if (y < 100) return 2000 + y;      // 68 -> 2068 (ถ้าอยากเป็น 2568 ให้เปลี่ยนเป็น 2500 + y)
+          if (y > 2400) return y - 543;      // 2568 -> 2025
+          return y;                          // 2025 คงเดิม
+        };
+
+        // --- รูปแบบ ISO/ตัวเลขล้วน: YYYY-MM-DD / DD-MM-YYYY / 10/1/68 ---
+        let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        if (m) {
+          const y = normalizeYear(m[1]); const mo = +m[2]; const d = +m[3];
+          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
+        }
+        m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+        if (m) {
+          const y = normalizeYear(m[3]); const mo = +m[2]; const d = +m[1];
+          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
+        }
+
+        // --- ไทย: "10 มค 68" / "10 มกราคม 2568"
+        m = s.match(/^(\d{1,2})\s*([ก-๙\.]+)\s*(\d{2,4})?$/);
+        if (m && TH_MONTHS[m[2]]) {
+          const d = +m[1], mo = TH_MONTHS[m[2]];
+          let y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
+          // ถ้าไม่ใส่ปี แล้ววัน-เดือนไปแล้ว ให้เลื่อนไปปีหน้า
+          if (!m[3]) {
+            const test = new Date(now.getFullYear(), mo - 1, d);
+            if (test < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y += 1;
+          }
+          return `${y}-${pad2(mo)}-${pad2(d)}`;
+        }
+
+        // --- อังกฤษ: "10 Jan 25" / "January 10 2025"
+        m = s.match(/^(?:(\d{1,2})\s+([a-z]+)\s+(\d{2,4})|([a-z]+)\s+(\d{1,2})\s+(\d{2,4}))$/i);
         if (m) {
           let d, moName, y;
-          if (m[1]) { d = m[1]; moName = m[2]; y = parseInt(m[3], 10); }
-          else { moName = m[4]; d = m[5]; y = parseInt(m[6], 10); }
-          if (y < 100) y += 2000;
-          if (y > 2400) y -= 543;
-          const mo = en[moName] || en[moName?.slice(0, 3)];
-          if (mo) return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          if (m[1]) { d = +m[1]; moName = m[2]; y = normalizeYear(m[3]); }
+          else { moName = m[4]; d = +m[5]; y = normalizeYear(m[6]); }
+          const mo = EN_MONTHS[moName] || EN_MONTHS[moName?.slice(0, 3)];
+          if (mo && y) return `${y}-${pad2(mo)}-${pad2(d)}`;
         }
 
-        // 4) ไทย: "10 ม.ค. 2568" / "10 มกราคม 2568"
-        const th = {
-          'ม.ค.': 1, 'มกราคม': 1, 'ก.พ.': 2, 'กุมภาพันธ์': 2, 'มี.ค.': 3, 'มีนาคม': 3, 'เม.ย.': 4, 'เมษายน': 4,
-          'พ.ค.': 5, 'พฤษภาคม': 5, 'มิ.ย.': 6, 'มิถุนายน': 6, 'ก.ค.': 7, 'กรกฎาคม': 7, 'ส.ค.': 8, 'สิงหาคม': 8,
-          'ก.ย.': 9, 'กันยายน': 9, 'ต.ค.': 10, 'ตุลาคม': 10, 'พ.ย.': 11, 'พฤศจิกายน': 11, 'ธ.ค.': 12, 'ธันวาคม': 12
-        };
-        m = core.match(/^(\d{1,2})\s*(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s*(\d{2,4})$/);
+        // --- “วันที่ 10 เดือน 1 68” แบบพูดเป็นตัวเลข
+        m = s.match(/^วันที่?\s*(\d{1,2})\s*(เดือน)?\s*(\d{1,2})\s*(ปี)?\s*(\d{2,4})$/);
         if (m) {
-          let y = parseInt(m[3], 10);
-          if (y < 100) y += 2000;
-          if (y > 2400) y -= 543;
-          const mo = th[m[2]];
-          return `${y}-${String(mo).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
+          const d = +m[1], mo = +m[3], y = normalizeYear(m[5]);
+          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
         }
 
+        // --- คำติดกัน: "10มค68" / "10กุมภาพันธ์2568"
+        m = s.match(/^(\d{1,2})([ก-๙]+)(\d{2,4})?$/);
+        if (m && TH_MONTHS[m[2]]) {
+          const d = +m[1], mo = TH_MONTHS[m[2]];
+          const y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
+          return `${y}-${pad2(mo)}-${pad2(d)}`;
+        }
+
+        // ไม่เข้าเงื่อนไข
         return "";
       }
 
