@@ -182,6 +182,12 @@
     .howto-steps {
       margin: 16px 0;
     }
+
+    .btn-small {
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
   </style>
 </head>
 
@@ -270,14 +276,51 @@
       const dw = _normThai(dish).split(/\s+/).filter(w => w.length >= 2);
       return qw.some(w => dw.includes(w));
     }
-    function showNotFound() {
+
+    function showNotFound(q) {
+      // ซ่อน daily และเปิดผลลัพธ์
       document.getElementById('daily').style.display = 'none';
       const panel = document.getElementById('result');
       panel.style.display = 'block';
-      document.getElementById('dish').textContent = 'ยังไม่มีเมนูนี้';
+
+      // หาค่าคำค้น: ใช้ q หากมี ไม่งั้น fallback เป็นค่าจากช่อง input
+      const inputVal = (document.getElementById('q')?.value || '').trim();
+      const base = (q && q.trim()) ? q : inputVal;          // << สำคัญ
+      const dishQuery = base.replace(/\s+/g, ' ') || 'เมนูอาหาร';
+      const ytQuery = `${dishQuery} วิธีทำ`;
+
+      // ตั้งหัวและล้างส่วนรายละเอียด
+      const dishEl = document.getElementById('dish');
+      dishEl.textContent = 'ยังไม่มีวิธีทำในระบบ';
+
       document.getElementById('all').innerHTML = '';
       document.getElementById('have').innerHTML = '';
       document.getElementById('missing').innerHTML = '';
+
+      // ซ่อนหัวข้อย่อยทั้งหมด
+      panel.querySelectorAll('h3').forEach(h => h.style.display = 'none');
+      ['all', 'have', 'missing'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+
+      // กันปุ่มซ้ำ
+      const oldYt = document.getElementById('ytNotFound');
+      if (oldYt) oldYt.remove();
+
+      // ปุ่ม YouTube พร้อม "ชื่อเมนู + วิธีทำ"
+      const ytBtn = document.createElement('a');
+      ytBtn.id = 'ytNotFound';
+      ytBtn.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(ytQuery);
+      ytBtn.target = '_blank';
+      ytBtn.rel = 'noopener';
+      ytBtn.className = 'btn-primary btn-small';
+      ytBtn.style.display = 'inline-block';
+      ytBtn.style.marginTop = '10px';
+      ytBtn.textContent = `ค้นหา "${ytQuery}" บน YouTube`;
+
+      dishEl.appendChild(document.createElement('br'));
+      dishEl.appendChild(ytBtn);
     }
 
     // ================== Voice ==================
@@ -322,6 +365,19 @@
 
       if (!data.ok) return showNotFound();
       if (!isRelatedQuery(q, data.dish)) return showNotFound();
+
+      // โชว์ส่วนรายละเอียดกลับมา (ในกรณีเคยซ่อนตอน not found)
+      const panel = document.getElementById('result');
+      panel.querySelectorAll('h3').forEach(h => h.style.display = 'block');
+      ['all', 'have', 'missing'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+      });
+
+      // กันปุ่ม YouTube (ถ้ามีจาก not found) ไม่ให้ค้าง
+      const oldYt = document.getElementById('ytNotFound');
+      if (oldYt) oldYt.remove();
+
 
       // แสดงผลลัพธ์
       const result = document.getElementById('result');
@@ -564,13 +620,14 @@
 
       links.innerHTML = '';
       const ytBtn = document.createElement('a');
-      ytBtn.href = buildYTHowtoLink(dish);
+      const ytQuery = `${dish} วิธีทำ`;
+      ytBtn.href = buildYTHowtoLink(dish); // ฟังก์ชันนี้ encode ให้แล้ว
       ytBtn.target = '_blank';
       ytBtn.rel = 'noopener';
       ytBtn.className = 'btn-primary';
       ytBtn.style.display = 'inline-block';
       ytBtn.style.marginTop = '8px';
-      ytBtn.textContent = 'ไปดูบน YouTube';
+      ytBtn.textContent = `ค้นหา "${ytQuery}" บน YouTube`;
       links.appendChild(ytBtn);
 
       document.getElementById('howtoModal').style.display = 'flex';
