@@ -55,28 +55,22 @@
     }
 
     .container {
-      max-width: 1400px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .container {
       max-width: 1000px;
       margin: 24px auto;
-      padding: 0 16px
+      padding: 0 16px;
     }
 
     .row {
       display: flex;
       gap: 10px;
-      align-items: center
+      align-items: center;
     }
 
     input[type=text] {
       flex: 1;
       padding: 10px;
       border: 1px solid #90CAF9;
-      border-radius: 8px
+      border-radius: 8px;
     }
 
     button {
@@ -85,7 +79,7 @@
       border: none;
       border-radius: 8px;
       padding: 10px 14px;
-      cursor: pointer
+      cursor: pointer;
     }
 
     .card {
@@ -93,7 +87,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
       padding: 16px;
-      margin-top: 16px
+      margin-top: 16px;
     }
 
     .pill {
@@ -101,23 +95,23 @@
       padding: 6px 10px;
       border-radius: 999px;
       margin: 4px 6px 0 0;
-      font-size: 14px
+      font-size: 14px;
     }
 
     .pill.have {
       background: #E8F5E9;
-      color: #2E7D32
+      color: #2E7D32;
     }
 
     .pill.missing {
       background: #FFEBEE;
-      color: #C62828
+      color: #C62828;
     }
 
     #voiceStatus {
       font-size: 12px;
       color: #1976D2;
-      margin-left: 8px
+      margin-left: 8px;
     }
 
     .recipe-have {
@@ -130,30 +124,40 @@
       margin: 8px 0;
     }
 
-    .modal-overlay {
+    /* Modal */
+    #howtoModal {
+      display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+    }
+
+    .modal-shell {
+      background: #fff;
+      width: min(720px, 92vw);
+      max-height: 85vh;
+      overflow: auto;
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .howto-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      z-index: 1000;
+      justify-content: space-between;
+      gap: 8px;
     }
 
-    .modal-content {
-      background: white;
-      padding: 20px;
+    .btn {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: none;
+      padding: 8px 12px;
       border-radius: 8px;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .howto-steps {
-      margin: 16px 0;
+      cursor: pointer;
     }
 
     .btn-primary {
@@ -161,12 +165,22 @@
       color: white;
       border: none;
       padding: 8px 16px;
-      border-radius: 4px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
     .btn-primary:hover {
       background: #1d4ed8;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #2563eb;
+      border: 1px solid #93c5fd;
+    }
+
+    .howto-steps {
+      margin: 16px 0;
     }
   </style>
 </head>
@@ -185,7 +199,7 @@
 
     <div class="row">
       <input id="q" type="text" placeholder="พูดหรือพิมพ์ชื่อเมนู เช่น ผัดกะเพรา">
-      <button id="mic">🎤</button>
+      <button id="mic" aria-label="เริ่มฟังเสียง">🎤</button>
       <button id="go">ค้นหา</button>
       <span id="voiceStatus"></span>
     </div>
@@ -211,640 +225,460 @@
       <h3 style="margin-top:12px;">ยังขาด</h3>
       <div id="missing"></div>
     </div>
-    <!-- HOWTO Modal -->
-    <div id="howtoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
-  justify-content:center; align-items:center; z-index:10001;">
-      <div
-        style="background:#fff; width:min(720px,92vw); max-height:85vh; overflow:auto; border-radius:14px; padding:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <h2 id="howtoTitle" style="margin:0;">วิธีทำ</h2>
-          <div>
-            <button id="btnClose" class="btn" type="button">ปิด</button>
-          </div>
+  </div>
+
+  <!-- HOWTO Modal -->
+  <div id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="modal-shell">
+      <div class="howto-header">
+        <h2 id="howtoTitle" style="margin:0;">วิธีทำ</h2>
+        <div style="display:flex; gap:8px;">
+          <button id="btnClose" class="btn" type="button">ปิด</button>
         </div>
-        <div id="howtoIngredients" style="margin:6px 0 10px; color:#475569"></div>
-        <ol id="howtoSteps" style="padding-left:20px"></ol>
-        <div id="howtoLinks" style="margin-top:12px"></div>
       </div>
+      <div id="howtoIngredients" style="margin:6px 0 10px; color:#475569"></div>
+      <ol id="howtoSteps" class="howto-steps" style="padding-left:20px"></ol>
+      <div id="howtoLinks" style="margin-top:12px"></div>
     </div>
+  </div>
 
-    <script>
-      // เปลี่ยนจาก static URL เป็น path โดยตรง
-      window.THAI_RECIPES_STATIC = "{% url 'api_recipes' %}";
-      const HOWTO_URL = "{% url 'api_howto' %}";
-      window.HOWTO_STATIC = "{% url 'api_howto_all' %}";// เพิ่ม URL pattern ใหม่
+  <script>
+    // ================== Config ==================
+    const HOWTO_URL = "{% url 'api_howto' %}";
+    window.HOWTO_STATIC = "{% url 'api_howto_all' %}";
 
+    // ป้องกัน error ถ้าไม่ได้กำหนดที่อื่น
+    window.CURRENT_INGREDIENTS = Array.isArray(window.CURRENT_INGREDIENTS) ? window.CURRENT_INGREDIENTS : [];
 
-      // ====== util ======
-      function pill(text, cls) { const s = document.createElement('span'); s.className = 'pill ' + cls; s.textContent = text; return s; }
-      function get(url) { return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()); }
-      function toLower(s) { return (s || '').toLocaleLowerCase('th-TH'); }
+    // ================== Utils ==================
+    function pill(text, cls) {
+      const s = document.createElement('span');
+      s.className = 'pill ' + (cls || '');
+      s.textContent = text;
+      return s;
+    }
+    function get(url) {
+      return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+    }
+    function _normThai(s) { return (s || '').toLocaleLowerCase('th-TH').trim(); }
+    function isRelatedQuery(query, dish) {
+      const q = _normThai(query).replace(/\s+/g, '');
+      const d = _normThai(dish).replace(/\s+/g, '');
+      if (!q || !d) return false;
+      if (q.length >= 2 && (d.includes(q) || q.includes(d))) return true;
+      const qw = _normThai(query).split(/\s+/).filter(w => w.length >= 2);
+      const dw = _normThai(dish).split(/\s+/).filter(w => w.length >= 2);
+      return qw.some(w => dw.includes(w));
+    }
+    function showNotFound() {
+      document.getElementById('daily').style.display = 'none';
+      const panel = document.getElementById('result');
+      panel.style.display = 'block';
+      document.getElementById('dish').textContent = 'ยังไม่มีเมนูนี้';
+      document.getElementById('all').innerHTML = '';
+      document.getElementById('have').innerHTML = '';
+      document.getElementById('missing').innerHTML = '';
+    }
 
-      function _normThai(s) { return (s || '').toLocaleLowerCase('th-TH').trim(); }
-      function isRelatedQuery(query, dish) {
-        const q = _normThai(query).replace(/\s+/g, '');
-        const d = _normThai(dish).replace(/\s+/g, '');
-        if (!q || !d) return false;
-        if (q.length >= 2 && (d.includes(q) || q.includes(d))) return true;
-        const qw = _normThai(query).split(/\s+/).filter(w => w.length >= 2);
-        const dw = _normThai(dish).split(/\s+/).filter(w => w.length >= 2);
-        return qw.some(w => dw.includes(w));
+    // ================== Voice ==================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null, listening = false;
+    function setStatus(t) { document.getElementById('voiceStatus').textContent = t || ''; }
+    function ensureRec() {
+      if (!SpeechRecognition) { alert('เบราว์เซอร์นี้ไม่รองรับคำสั่งเสียง'); return null; }
+      if (!rec) {
+        rec = new SpeechRecognition();
+        rec.lang = 'th-TH'; rec.interimResults = false; rec.continuous = false;
+        rec.onstart = () => { listening = true; setStatus('กำลังฟัง…'); };
+        rec.onend = () => { listening = false; setStatus(''); };
+        rec.onresult = (ev) => {
+          const text = (ev.results?.[0]?.[0]?.transcript || '').trim();
+          let q = text.toLocaleLowerCase('th-TH').replace(/^(เมนู|อยากทำ|ทำ|อยากกิน)\s*/, '').trim();
+          if (!q) q = text;
+          const qEl = document.getElementById('q');
+          qEl.value = q;
+          run(q);
+        };
       }
-      function showNotFound(q) {
-        document.getElementById('daily').style.display = 'none';
-        const panel = document.getElementById('result');
-        panel.style.display = 'block';
-        document.getElementById('dish').textContent = 'ยังไม่มีเมนูนี้';
-        document.getElementById('all').innerHTML = '';
-        document.getElementById('have').innerHTML = '';
-        document.getElementById('missing').innerHTML = '';
+      return rec;
+    }
+
+    document.getElementById('mic').addEventListener('click', () => {
+      const r = ensureRec(); if (!r) return;
+      if (listening) r.stop(); else { try { r.start(); } catch (e) { } }
+    });
+
+    // ================== Search Flow ==================
+    async function run(q) {
+      if (!q) {
+        document.getElementById('daily').style.display = 'block';
+        document.getElementById('result').style.display = 'none';
+        return;
       }
 
-      document.getElementById('go').addEventListener('click', () => run(document.getElementById('q').value.trim()));
-      document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') run(e.target.value.trim()); });
+      document.getElementById('daily').style.display = 'none';
 
-      // ====== voice ======
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      let rec = null, listening = false;
-      function setStatus(t) { document.getElementById('voiceStatus').textContent = t || ''; }
-      function ensureRec() {
-        if (!SpeechRecognition) { alert('เบราว์เซอร์นี้ไม่รองรับคำสั่งเสียง'); return null; }
-        if (!rec) {
-          rec = new SpeechRecognition();
-          rec.lang = 'th-TH'; rec.interimResults = false; rec.continuous = false;
-          rec.onstart = () => { listening = true; setStatus('กำลังฟัง…'); };
-          rec.onend = () => { listening = false; setStatus(''); };
-          rec.onresult = (ev) => {
-            const text = ev.results[0][0].transcript.trim();
-            const lower = toLower(text);
+      const data = await get(`{% url 'api_recipe_suggest' %}?q=${encodeURIComponent(q)}`);
 
-            let q = lower.replace(/^(เมนู|อยากทำ|ทำ|อยากกิน)\s*/, '').trim();
-            if (!q) q = lower;
-            document.getElementById('q').value = q;
-            run(q);
-          };
+      if (!data.ok) return showNotFound();
+      if (!isRelatedQuery(q, data.dish)) return showNotFound();
+
+      // แสดงผลลัพธ์
+      const result = document.getElementById('result');
+      result.style.display = 'block';
+
+      const dishH = document.getElementById('dish');
+      dishH.textContent = data.dish;
+
+      // ตัดสินใจ source (เดาได้ถ้า backend ไม่ส่ง)
+      const src = data.source
+        ? String(data.source).toLowerCase()
+        : (Array.isArray(data.steps) && data.steps.length ? 'local' : 'api');
+
+      // ปุ่ม "ดูวิธีทำ"
+      const btn = document.createElement('button');
+      btn.textContent = 'ดูวิธีทำ';
+      btn.style.marginLeft = '8px';
+      btn.addEventListener('click', () => openHowtoSmart(data.dish, src));
+      dishH.appendChild(btn);
+
+      // Pills
+      const allBox = document.getElementById('all'); allBox.innerHTML = '';
+      const haveBox = document.getElementById('have'); haveBox.innerHTML = '';
+      const missBox = document.getElementById('missing'); missBox.innerHTML = '';
+
+      (data.ingredients || []).forEach(x => allBox.appendChild(pill(x)));
+      (data.have || []).forEach(x => haveBox.appendChild(pill(x, 'have')));
+      (data.missing || []).forEach(x => missBox.appendChild(pill(x, 'missing')));
+    }
+
+    document.getElementById('go').addEventListener('click', () => {
+      run(document.getElementById('q').value.trim());
+    });
+    const qInput = document.getElementById('q');
+    qInput.addEventListener('keydown', e => { if (e.key === 'Enter') run(e.target.value.trim()); });
+    qInput.addEventListener('input', () => {
+      const v = qInput.value.trim();
+      document.getElementById('result').style.display = v ? 'block' : 'none';
+      document.getElementById('daily').style.display = v ? 'none' : 'block';
+      if (!v) { document.getElementById('result').style.display = 'none'; }
+    });
+
+    // ================== Daily Recommendations ==================
+    async function loadDailyRecs() {
+      const wrapApi = document.getElementById('dailyGridApi');
+      const wrapLocal = document.getElementById('dailyGridLocal');
+      wrapApi.innerHTML = "";
+      wrapLocal.innerHTML = "";
+
+      const makeCard = (it) => {
+        const card = document.createElement('div');
+        card.className = "rec-card";
+        card.style.cssText = "background:#fff;border:1px solid #e6f0ff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.04)";
+
+        if (it.image) {
+          const img = document.createElement('img');
+          img.src = it.image;
+          img.alt = it.title || '';
+          img.style.width = '100%';
+          img.style.height = '140px';
+          img.style.objectFit = 'cover';
+          card.appendChild(img);
         }
-        return rec;
-      }
-      document.getElementById('mic').addEventListener('click', () => {
-        const r = ensureRec(); if (!r) return;
-        if (listening) r.stop(); else try { r.start(); } catch (e) { }
-      });
 
+        const body = document.createElement('div');
+        body.style.padding = '10px 12px';
 
-      async function run(q) {
-        if (!q) {
-          document.getElementById('daily').style.display = 'block';
-          document.getElementById('result').style.display = 'none';
-          return;
-        }
+        const title = document.createElement('div');
+        title.style.fontWeight = '600';
+        title.style.marginBottom = '6px';
+        title.textContent = it.title || '';
+        body.appendChild(title);
 
+        const usedLine = document.createElement('div');
+        usedLine.style.fontSize = '12px';
+        usedLine.style.marginTop = '6px';
+        usedLine.textContent = 'ใช้ของที่มี: ';
+        (it.used || []).forEach(x => usedLine.appendChild(pill(x, 'have')));
+        if (!(it.used || []).length) usedLine.append(' -');
+        body.appendChild(usedLine);
 
-        document.getElementById('daily').style.display = 'none';
+        const missLine = document.createElement('div');
+        missLine.style.fontSize = '12px';
+        missLine.style.marginTop = '6px';
+        missLine.textContent = 'ยังขาด: ';
+        (it.missing || []).forEach(x => missLine.appendChild(pill(x, 'missing')));
+        if (!(it.missing || []).length) missLine.append(' -');
+        body.appendChild(missLine);
 
-        const data = await get(`{% url 'api_recipe_suggest' %}?q=${encodeURIComponent(q)}`);
-
-        // ถ้า backend ตอบ ok:false → โชว์ “ยังไม่มีเมนูนี้”
-        if (!data.ok) { return showNotFound(q); }
-
-        // ถ้าชื่อที่ได้ไม่ “เกี่ยว” กับคำค้น → ถือว่าไม่พบ
-        if (!isRelatedQuery(q, data.dish)) {
-          return showNotFound(q);
-        }
-
-        document.getElementById('result').style.display = 'block';
-        document.getElementById('dish').textContent = data.dish;
-
-        // เพิ่มแทนที่ให้กำหนดปุ่ม
-        const dishH = document.getElementById('dish');
-        dishH.innerHTML = data.dish + ' ';
-
-        // เดามาเองถ้า backend ยังไม่ส่ง source:
-        // - ถ้ามี steps => local, ไม่งั้น => api
-        const src = data.source
-          ? String(data.source).toLowerCase()
-          : (Array.isArray(data.steps) && data.steps.length ? 'local' : 'api');
-
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'margin-top:10px;display:flex;gap:8px;';
         const btn = document.createElement('button');
         btn.textContent = 'ดูวิธีทำ';
-        btn.style.marginLeft = '8px';
-        btn.onclick = () => openHowtoSmart(data.dish, src);
-        dishH.appendChild(btn);
-
-        const allBox = document.getElementById('all'); allBox.innerHTML = '';
-        const haveBox = document.getElementById('have'); haveBox.innerHTML = '';
-        const missBox = document.getElementById('missing'); missBox.innerHTML = '';
-
-        (data.ingredients || []).forEach(x => allBox.appendChild(pill(x, '')));
-        (data.have || []).forEach(x => haveBox.appendChild(pill(x, 'have')));
-        (data.missing || []).forEach(x => missBox.appendChild(pill(x, 'missing')));
-      }
-
-
-      document.getElementById('go').addEventListener('click', () => run(document.getElementById('q').value.trim()));
-
-
-      const qInput = document.getElementById('q');
-      qInput.addEventListener('input', () => {
-        const v = qInput.value.trim();
-        if (v === '') {
-          document.getElementById('result').style.display = 'none';
-          document.getElementById('daily').style.display = 'block';
-        }
-      });
-
-
-      qInput.addEventListener('keydown', e => { if (e.key === 'Enter') run(e.target.value.trim()); });
-
-      async function loadDailyRecs() {
-        const wrapApi = document.getElementById('dailyGridApi');
-        const wrapLocal = document.getElementById('dailyGridLocal');
-        wrapApi.innerHTML = "";
-        wrapLocal.innerHTML = "";
-
-        const makeCard = (it) => {
-          const card = document.createElement('div');
-          card.className = "rec-card";
-          card.style.cssText = "background:#fff;border:1px solid #e6f0ff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.04)";
-
-          if (it.image) {
-            const img = document.createElement('img');
-            img.src = it.image;
-            img.alt = it.title || '';
-            img.style.width = '100%';
-            img.style.height = '140px';
-            img.style.objectFit = 'cover';
-            card.appendChild(img);
-          }
-
-          const body = document.createElement('div');
-          body.style.padding = '10px 12px';
-
-          const title = document.createElement('div');
-          title.style.fontWeight = '600';
-          title.style.marginBottom = '6px';
-          title.textContent = it.title || '';
-          body.appendChild(title);
-
-          const usedLine = document.createElement('div');
-          usedLine.style.fontSize = '12px';
-          usedLine.style.marginTop = '6px';
-          usedLine.textContent = 'ใช้ของที่มี: ';
-          (it.used || []).forEach(x => usedLine.appendChild(pill(x, 'have')));
-          if (!(it.used || []).length) usedLine.append(' -');
-          body.appendChild(usedLine);
-
-          const missLine = document.createElement('div');
-          missLine.style.fontSize = '12px';
-          missLine.style.marginTop = '6px';
-          missLine.textContent = 'ยังขาด: ';
-          (it.missing || []).forEach(x => missLine.appendChild(pill(x, 'missing')));
-          if (!(it.missing || []).length) missLine.append(' -');
-          body.appendChild(missLine);
-
-          const btnRow = document.createElement('div');
-          btnRow.style.cssText = 'margin-top:10px;display:flex;gap:8px;';
-          const btn = document.createElement('button');
-          btn.textContent = 'ดูวิธีทำ';
-          btn.addEventListener('click', () => {
-            const src = (String(it.source || (it.steps && it.steps.length ? 'local' : 'api'))).toLowerCase();
-            openHowtoSmart(it.title || '', src);   // เปิดโมดัลเสมอ
-          });
-          btnRow.appendChild(btn);
-          body.appendChild(btnRow);
-
-          card.appendChild(body);
-          return card;
-        };
-
-        // --- 1) จาก API ---
-        try {
-          const res = await fetch("{% url 'api_daily_recs' %}", { headers: { 'Accept': 'application/json' } });
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const items = await res.json();
-          const isApi = (obj) => (String(obj.source || '').toLowerCase() === 'api') || !(Array.isArray(obj.steps) && obj.steps.length);
-          const apiItems = (items || []).filter(isApi).slice(0, 3);
-          if (!apiItems.length) {
-            const msg = document.createElement('div');
-            msg.style.gridColumn = '1/-1'; msg.style.color = '#64748b';
-            msg.textContent = 'ไม่มีเมนูจาก API';
-            wrapApi.appendChild(msg);
-          } else {
-            apiItems.forEach(it => { it.source = 'api'; wrapApi.appendChild(makeCard(it)); });
-          }
-        } catch (e) {
-          const msg = document.createElement('div');
-          msg.style.gridColumn = '1/-1'; msg.style.color = '#C62828';
-          msg.textContent = 'โหลดเมนูจาก API ไม่สำเร็จ';
-          wrapApi.appendChild(msg);
-          console.warn('daily recs API error:', e);
-        }
-
-        // --- 2) จาก Local (thai_recipes.json) แบบให้ความสำคัญของใกล้หมดอายุ ---
-        try {
-          const rLocal = await fetch("{% url 'api_daily_recs_local' %}", { headers: { 'Accept': 'application/json' } });
-          if (!rLocal.ok) throw new Error("HTTP " + rLocal.status);
-          const itemsLocal = await rLocal.json();
-
-          if (!(itemsLocal || []).length) {
-            const msg = document.createElement('div');
-            msg.style.gridColumn = '1/-1'; msg.style.color = '#64748b';
-            msg.textContent = 'ไม่มีเมนูจาก Local';
-            wrapLocal.appendChild(msg);
-          } else {
-            itemsLocal.forEach(it => {
-              it.source = 'local';
-              wrapLocal.appendChild(makeCard(it));
-            });
-          }
-        } catch (e) {
-          const msg = document.createElement('div');
-          msg.style.gridColumn = '1/-1'; msg.style.color = '#C62828';
-          msg.textContent = 'โหลดเมนูจาก Local ไม่สำเร็จ';
-          wrapLocal.appendChild(msg);
-          console.warn('daily recs LOCAL error:', e);
-        }
-      }
-
-        document.addEventListener('DOMContentLoaded', loadDailyRecs);
-
-        // สร้างปุ่มดูวิธีทำข้างชื่อเมนู (ลบของเก่าก่อนกันซ้อน)
-        const dishEl = document.getElementById('dish');
-        const oldBtn = dishEl.querySelector('.btn-howto');
-        if (oldBtn) oldBtn.remove();
-
-        const btnCloseEl = document.getElementById('btnClose');
-        if (btnCloseEl) btnCloseEl.addEventListener('click', closeHowto);
-
-        const btnSpeakEl = document.getElementById('btnSpeak');
-        if (btnSpeakEl) btnSpeakEl.addEventListener('click', speakHowto);
-
-        // ปิดเมื่อคลิกที่ backdrop
-        const howtoModal = document.getElementById('howtoModal');
-        if (howtoModal) {
-          howtoModal.addEventListener('click', (e) => {
-            if (e.target.id === 'howtoModal') closeHowto();
-          });
-        }
-
-        // ====== Modal basic ======
-        function closeHowto() {
-          document.getElementById('howtoModal').style.display = 'none';
-          stopSpeak();
-        }
-        document.getElementById('btnClose').addEventListener('click', closeHowto);
-        document.getElementById('howtoModal').addEventListener('click', (e) => {
-          if (e.target.id === 'howtoModal') closeHowto();
+        btn.addEventListener('click', () => {
+          const src = (String(it.source || (it.steps && it.steps.length ? 'local' : 'api'))).toLowerCase();
+          openHowtoSmart(it.title || '', src);
         });
+        btnRow.appendChild(btn);
+        body.appendChild(btnRow);
 
-        async function fetchHowto(dishName) {
-          const url = HOWTO_URL + "?q=" + encodeURIComponent(dishName);
-          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-          if (!res.ok || data.ok === false) {
-            throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
-          }
-          return data;
+        card.appendChild(body);
+        return card;
+      };
+
+      // 1) จาก API
+      try {
+        const res = await fetch("{% url 'api_daily_recs' %}", { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const items = await res.json();
+        const isApi = (obj) => (String(obj.source || '').toLowerCase() === 'api') || !(Array.isArray(obj.steps) && obj.steps.length);
+        const apiItems = (items || []).filter(isApi).slice(0, 3);
+        if (!apiItems.length) {
+          const msg = document.createElement('div');
+          msg.style.gridColumn = '1/-1'; msg.style.color = '#64748b';
+          msg.textContent = 'ไม่มีเมนูจาก API';
+          wrapApi.appendChild(msg);
+        } else {
+          apiItems.forEach(it => { it.source = 'api'; wrapApi.appendChild(makeCard(it)); });
         }
+      } catch (e) {
+        const msg = document.createElement('div');
+        msg.style.gridColumn = '1/-1'; msg.style.color = '#C62828';
+        msg.textContent = 'โหลดเมนูจาก API ไม่สำเร็จ';
+        wrapApi.appendChild(msg);
+        console.warn('daily recs API error:', e);
+      }
 
-        function _normalizeName(s) {
-          return (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
+      // 2) จาก Local
+      try {
+        const rLocal = await fetch("{% url 'api_daily_recs_local' %}", { headers: { 'Accept': 'application/json' } });
+        if (!rLocal.ok) throw new Error("HTTP " + rLocal.status);
+        const itemsLocal = await rLocal.json();
+
+        if (!(itemsLocal || []).length) {
+          const msg = document.createElement('div');
+          msg.style.gridColumn = '1/-1'; msg.style.color = '#64748b';
+          msg.textContent = 'ไม่มีเมนูจาก Local';
+          wrapLocal.appendChild(msg);
+        } else {
+          itemsLocal.forEach(it => { it.source = 'local'; wrapLocal.appendChild(makeCard(it)); });
         }
+      } catch (e) {
+        const msg = document.createElement('div');
+        msg.style.gridColumn = '1/-1'; msg.style.color = '#C62828';
+        msg.textContent = 'โหลดเมนูจาก Local ไม่สำเร็จ';
+        wrapLocal.appendChild(msg);
+        console.warn('daily recs LOCAL error:', e);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadDailyRecs);
 
-        async function fetchHowtoFromStatic(dishName) {
-          const res = await fetch(window.HOWTO_STATIC, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-          const want = _normalizeName(dishName);
+    // ================== HOWTO Fetchers ==================
+    async function fetchHowto(dishName) {
+      const url = HOWTO_URL + "?q=" + encodeURIComponent(dishName);
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        throw new Error(data && data.error ? data.error : `HTTP ${res.status}`);
+      }
+      return data; // shape: { ok, title, ingredients, steps, videos? }
+    }
 
-          // รองรับโครงสร้างที่มี wrapper "recipes"
-          let root = data;
-          if (root && typeof root === 'object' && !Array.isArray(root) &&
-            root.recipes && typeof root.recipes === 'object') {
-            root = root.recipes;
+    function _normalizeName(s) {
+      return (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
+    }
+
+    async function fetchHowtoFromStatic(dishName) {
+      const res = await fetch(window.HOWTO_STATIC, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      const want = _normalizeName(dishName);
+
+      let root = data;
+      if (root && typeof root === 'object' && !Array.isArray(root) &&
+        root.recipes && typeof root.recipes === 'object') {
+        root = root.recipes;
+      }
+
+      let found = null;
+
+      if (root && typeof root === 'object' && !Array.isArray(root)) {
+        for (const k of Object.keys(root)) {
+          if (_normalizeName(k) === want) { found = root[k]; break; }
+        }
+        if (!found) {
+          for (const v of Object.values(root)) {
+            const t = _normalizeName(v?.title || v?.name || '');
+            if (t === want) { found = v; break; }
           }
+        }
+      }
+      if (!found && Array.isArray(root)) {
+        found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
+      }
+      if (!found && root && Array.isArray(root.items)) {
+        found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
+      }
 
-          let found = null;
+      if (!found) throw new Error('ไม่พบวิธีทำในไฟล์');
 
-          // 1) object map
-          if (root && typeof root === 'object' && !Array.isArray(root)) {
-            for (const k of Object.keys(root)) {
-              if (_normalizeName(k) === want) { found = root[k]; break; }
-            }
-            if (!found) {
-              for (const v of Object.values(root)) {
-                const t = _normalizeName(v?.title || v?.name || '');
-                if (t === want) { found = v; break; }
-              }
-            }
-          }
+      return {
+        title: found.title || found.name || dishName,
+        ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
+        steps: Array.isArray(found.steps) ? found.steps : [],
+        videos: Array.isArray(found.videos) ? found.videos : []
+      };
+    }
 
-          // 2) array
-          if (!found && Array.isArray(root)) {
-            found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
-          }
+    // ================== HOWTO Modal + Render ==================
+    function buildYTHowtoLink(dishName) {
+      const kw = (dishName || '').trim().replace(/\s+/g, ' ');
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
+    }
 
-          // 3) {items:[...]}
-          if (!found && root && Array.isArray(root.items)) {
-            found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
-          }
+    function renderHowtoModal(data, fallbackDishName) {
+      const titleEl = document.getElementById('howtoTitle');
+      const ingEl = document.getElementById('howtoIngredients');
+      const stepsWrap = document.getElementById('howtoSteps');
+      const links = document.getElementById('howtoLinks');
 
-          if (!found) throw new Error('ไม่พบวิธีทำในไฟล์');
+      const dish = data.title || fallbackDishName || '';
+      titleEl.textContent = dish;
 
-          return {
-            title: found.title || found.name || dishName,
-            ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
-            steps: Array.isArray(found.steps) ? found.steps : [],
-            videos: Array.isArray(found.videos) ? found.videos : []
+      ingEl.textContent = Array.isArray(data.ingredients) && data.ingredients.length
+        ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
+        : '';
+
+      stepsWrap.innerHTML = '';
+      const steps = Array.isArray(data.steps) ? data.steps : [];
+      if (steps.length) {
+        steps.forEach(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          stepsWrap.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = 'ยังไม่มีขั้นตอนในระบบ';
+        stepsWrap.appendChild(li);
+      }
+
+      links.innerHTML = '';
+      const ytBtn = document.createElement('a');
+      ytBtn.href = buildYTHowtoLink(dish);
+      ytBtn.target = '_blank';
+      ytBtn.rel = 'noopener';
+      ytBtn.className = 'btn-primary';
+      ytBtn.style.display = 'inline-block';
+      ytBtn.style.marginTop = '8px';
+      ytBtn.textContent = 'ไปดูบน YouTube';
+      links.appendChild(ytBtn);
+
+      document.getElementById('howtoModal').style.display = 'flex';
+    }
+
+    async function openHowtoSmart(dishName, source) {
+      const s = (source || '').toLowerCase();
+
+      // policy: ถ้า source = api → เปิด YouTube ตรง ๆ ก็ได้
+      if (s === 'api') {
+        return renderHowtoModal({ title: dishName, steps: [] }, dishName); // ให้กดไป YouTube ได้ในโมดัล
+      }
+
+      // 1) ลอง API ของเรา
+      try {
+        const data = await fetchHowto(dishName);
+        return renderHowtoModal(data, dishName);
+      } catch (_) { }
+
+      // 2) ลอง Static ทั้งหมด
+      try {
+        const data = await fetchHowtoFromStatic(dishName);
+        return renderHowtoModal(data, dishName);
+      } catch (_) { }
+
+      // 3) ไม่เจอ → ให้โมดัลว่าง + ปุ่ม YouTube
+      return renderHowtoModal({ title: dishName, steps: [] }, dishName);
+    }
+
+    window.openHowtoSmart = openHowtoSmart; // เผื่อเรียกจาก card
+
+    // ================== Modal Controls ==================
+    function closeHowto() {
+      document.getElementById('howtoModal').style.display = 'none';
+      stopSpeak();
+    }
+    document.getElementById('btnClose').addEventListener('click', closeHowto);
+    document.getElementById('howtoModal').addEventListener('click', (e) => {
+      if (e.target.id === 'howtoModal') closeHowto();
+    });
+
+    // ================== Thai TTS (อ่านให้ฟัง) ==================
+    let _ttsQueue = [];
+    let _ttsSpeaking = false;
+    let _thaiVoice = null;
+
+    function pickThaiVoice() {
+      const list = speechSynthesis.getVoices() || [];
+      _thaiVoice = list.find(v => /th(-|_)?TH/i.test(v.lang)) ||
+        list.find(v => /Thai|ไทย/i.test(v.name)) || null;
+    }
+
+    function speakHowto() {
+      if (!('speechSynthesis' in window)) { alert('เบราว์เซอร์ไม่รองรับเสียงพูด'); return; }
+      stopSpeak();
+
+      if (!_thaiVoice) {
+        if (speechSynthesis.onvoiceschanged === null) {
+          speechSynthesis.onvoiceschanged = () => {
+            pickThaiVoice();
+            speechSynthesis.onvoiceschanged = null;
+            speakHowto();
           };
         }
+        pickThaiVoice();
+      }
 
-        function buildYTHowtoLink(dishName) {
-          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-          return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-        }
+      const title = document.getElementById('howtoTitle')?.textContent || '';
+      const ingText = document.getElementById('howtoIngredients')?.textContent || '';
+      const steps = Array.from(document.querySelectorAll('#howtoSteps li')).map(li => li.textContent);
 
-        // ====== เปิดโมดัล + ใส่ข้อมูล ======
-        async function openHowto(dishName) {
-          try {
-            const data = await fetchHowto(dishName);
+      const parts = [];
+      if (title) parts.push(`เมนู: ${title}`);
+      if (ingText) parts.push(ingText);
+      if (steps.length) {
+        parts.push('ขั้นตอนการทำ:');
+        steps.forEach((s, i) => parts.push(`ขั้นตอนที่ ${i + 1} ${s}`));
+      }
 
-            document.getElementById('howtoTitle').textContent = data.title || dishName;
+      _ttsQueue = parts.map(t => {
+        const u = new SpeechSynthesisUtterance(t);
+        u.lang = 'th-TH';
+        if (_thaiVoice) u.voice = _thaiVoice;
+        u.rate = 1.0;
+        return u;
+      });
 
-            const ing = Array.isArray(data.ingredients) ? data.ingredients : [];
-            document.getElementById('howtoIngredients').innerHTML =
-              ing.length ? "วัตถุดิบ: " + ing.join(", ") : "";
+      _ttsSpeaking = true;
+      speakNext();
+    }
 
-            const stepsWrap = document.getElementById('howtoSteps');
-            stepsWrap.innerHTML = "";
-            const steps = Array.isArray(data.steps) ? data.steps : [];
-            if (steps.length) {
-              steps.forEach(s => {
-                const li = document.createElement('li');
-                li.textContent = s;
-                stepsWrap.appendChild(li);
-              });
-            } else {
-              const li = document.createElement('li');
-              li.textContent = "ยังไม่มีขั้นตอนในระบบ";
-              stepsWrap.appendChild(li);
-            }
+    function speakNext() {
+      if (!_ttsSpeaking || _ttsQueue.length === 0) { _ttsSpeaking = false; return; }
+      const u = _ttsQueue.shift();
+      u.onend = () => speakNext();
+      u.onerror = () => speakNext();
+      speechSynthesis.speak(u);
+    }
 
-            const links = document.getElementById('howtoLinks');
-            links.innerHTML = "";
-            const vids = Array.isArray(data.videos) ? data.videos : [];
-            vids.forEach(v => {
-              const a = document.createElement('a');
-              a.href = v.url; a.target = "_blank"; a.rel = "noopener";
-              a.textContent = v.title || v.url;
-              a.style.display = "inline-block";
-              a.style.marginRight = "8px";
-              links.appendChild(a);
-            });
+    function stopSpeak() {
+      if (!('speechSynthesis' in window)) return;
+      _ttsSpeaking = false;
+      _ttsQueue = [];
+      speechSynthesis.cancel();
+    }
 
-            document.getElementById('howtoModal').style.display = 'flex';
-          } catch (e) {
-            alert("โหลดวิธีทำไม่สำเร็จ: " + (e.message || e));
-          }
-        }
-
-        // ====== TTS ภาษาไทย ======
-        let _ttsQueue = [];
-        let _ttsSpeaking = false;
-        let _thaiVoice = null;
-
-        function pickThaiVoice() {
-          const list = speechSynthesis.getVoices() || [];
-          // พยายามหาที่เป็น th-TH ก่อน
-          _thaiVoice = list.find(v => /th(-|_)?TH/i.test(v.lang)) ||
-            list.find(v => /Thai|ไทย/i.test(v.name)) ||
-            null;
-        }
-
-        function speakHowto() {
-          if (!('speechSynthesis' in window)) { alert('เบราว์เซอร์ไม่รองรับเสียงพูด'); return; }
-          stopSpeak();
-
-          if (!_thaiVoice) {
-            // บางบราวเซอร์ต้องรอ voicesloaded
-            if (speechSynthesis.onvoiceschanged === null) {
-              speechSynthesis.onvoiceschanged = () => {
-                pickThaiVoice();
-                speechSynthesis.onvoiceschanged = null;
-                speakHowto(); // ลองใหม่
-              };
-            }
-            pickThaiVoice(); // ลองหยิบก่อน
-          }
-
-          const title = document.getElementById('howtoTitle')?.textContent || '';
-          const ingText = document.getElementById('howtoIngredients')?.textContent || '';
-          const steps = Array.from(document.querySelectorAll('#howtoSteps li')).map(li => li.textContent);
-
-          const parts = [];
-          if (title) parts.push(`เมนู: ${title}`);
-          if (ingText) parts.push(ingText);
-          if (steps.length) {
-            parts.push('ขั้นตอนการทำ:');
-            steps.forEach((s, i) => parts.push(`ขั้นตอนที่ ${i + 1} ${s}`));
-          }
-
-          _ttsQueue = parts.map(t => {
-            const u = new SpeechSynthesisUtterance(t);
-            u.lang = 'th-TH';
-            if (_thaiVoice) u.voice = _thaiVoice;
-            u.rate = 1.0;
-            return u;
-          });
-
-          _ttsSpeaking = true;
-          speakNext();
-        }
-
-        function speakNext() {
-          if (!_ttsSpeaking || _ttsQueue.length === 0) { _ttsSpeaking = false; return; }
-          const u = _ttsQueue.shift();
-          u.onend = () => speakNext();
-          u.onerror = () => speakNext();
-          speechSynthesis.speak(u);
-        }
-
-        function stopSpeak() {
-          if (!('speechSynthesis' in window)) return;
-          _ttsSpeaking = false;
-          _ttsQueue = [];
-          speechSynthesis.cancel();
-        }
-
-        // === 1) เปิด YouTube ค้นหา "ชื่อเมนู วิธีทำ"
-        function openYTHowto(dishName) {
-          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-          const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-          try { window.open(url, '_blank', 'noopener'); } catch { location.href = url; }
-        }
-
-        // === 2) ดึง HOWTO จาก Local (API ของคุณ)
-        async function fetchHowtoLocal(dishName) {
-          const url = `{% url 'api_howto' %}?q=${encodeURIComponent(dishName)}`;
-          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || data.ok === false) throw new Error(data.error || `ไม่พบวิธีทำ: ${dishName}`);
-          return data; // shape: { ok, title, ingredients, steps, videos? }
-        }
-
-        // === 3) เปิด HOWTO แบบ “ฉลาด”:
-        //    - ถ้า source = "local" → เปิด Local เสมอ
-        //    - ถ้า source = "api"   → เปิด YouTube ทันที
-        //    - ถ้าไม่รู้แหล่งที่มา → พยายามโหลด Local ก่อน, ถ้าไม่เจอค่อยเปิด YouTube
-        async function openHowtoSmart(dishName, source) {
-          const s = (source || '').toLowerCase();
-          if (s === 'api') {
-            return openYTHowto(dishName);
-          }
-          if (s === 'local') {
-            try {
-              const data = await fetchHowtoLocal(dishName);
-              return renderHowtoModal(data); // ใช้ตัวเรนเดอร์เดิมของคุณ
-            } catch (e) {
-              alert(e.message || e);
-              return;
-            }
-          }
-          // ไม่รู้ที่มา → ลอง Local ก่อน แล้วค่อย fallback ไป YouTube
-          try {
-            const data = await fetchHowtoLocal(dishName);
-            return renderHowtoModal(data);
-          } catch {
-            return openYTHowto(dishName);
-          }
-        }
-
-        // === 4) ตัวเรนเดอร์โมดัลเดิม (ถ้าคุณมีอยู่แล้ว ให้เรียกของเดิมได้เลย)
-        function renderHowtoModal(data) {
-          // ตัวอย่างเรนเดอร์อย่างย่อ (แทนที่ด้วย modal ของคุณ)
-          document.getElementById('howtoTitle').textContent = data.title || '';
-          document.getElementById('howtoIngredients').textContent =
-            Array.isArray(data.ingredients) && data.ingredients.length
-              ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
-              : '';
-          const stepsWrap = document.getElementById('howtoSteps');
-          stepsWrap.innerHTML = '';
-          (data.steps || []).forEach(s => {
-            const li = document.createElement('li');
-            li.textContent = s;
-            stepsWrap.appendChild(li);
-          });
-          const links = document.getElementById('howtoLinks');
-          links.innerHTML = '';
-          (data.videos || []).forEach(v => {
-            const a = document.createElement('a');
-            a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
-            a.textContent = v.title || v.url;
-            a.style.marginRight = '8px';
-            links.appendChild(a);
-          });
-          document.getElementById('howtoModal').style.display = 'flex';
-        }
-
-        function renderCard(recipe) {
-          // แยกวัตถุดิบที่มี/ขาด
-          const have = [], missing = [];
-          for (const ing of recipe.ingredients || []) {
-            if (window.CURRENT_INGREDIENTS.includes(ing)) {
-              have.push(ing);
-            } else {
-              missing.push(ing);
-            }
-          }
-
-          return `
-    <div class="card">
-      <div class="card-body">
-        <h3>${recipe.name}</h3>
-        ${have.length > 0 ? `
-          <p class="recipe-have">
-            <strong>มีแล้ว:</strong> ${have.join(', ')}
-          </p>
-        ` : ''}
-        ${missing.length > 0 ? `
-          <p class="recipe-missing">
-            <strong>ต้องซื้อ:</strong> ${missing.join(', ')}
-          </p>
-        ` : ''}
-        <button onclick="openHowto('${recipe.name}')" class="btn-primary">วิธีทำ</button>
-      </div>
-    </div>
-  `;
-        }
-        // สร้างลิงก์ YouTube (ไม่เปิด popup ทันที)
-        function buildYTHowtoLink(dishName) {
-          const kw = (dishName || '').trim().replace(/\s+/g, ' ');
-          return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${kw} วิธีทำ`);
-        }
-
-        function renderHowtoModal(data, fallbackDishName) {
-          const titleEl = document.getElementById('howtoTitle');
-          const ingEl = document.getElementById('howtoIngredients');
-          const stepsWrap = document.getElementById('howtoSteps');
-          const links = document.getElementById('howtoLinks');
-
-          const dish = data.title || fallbackDishName || '';
-          titleEl.textContent = dish;
-
-          ingEl.textContent = Array.isArray(data.ingredients) && data.ingredients.length
-            ? 'วัตถุดิบ: ' + data.ingredients.join(', ')
-            : '';
-
-          stepsWrap.innerHTML = '';
-          const steps = Array.isArray(data.steps) ? data.steps : [];
-          if (steps.length) {
-            steps.forEach(s => {
-              const li = document.createElement('li');
-              li.textContent = s;
-              stepsWrap.appendChild(li);
-            });
-          } else {
-            const li = document.createElement('li');
-            li.textContent = 'ยังไม่มีขั้นตอนในระบบ';
-            stepsWrap.appendChild(li);
-          }
-
-          // ✔ ปุ่มไปดูบน YouTube (มีเสมอ)
-          links.innerHTML = '';
-          const ytBtn = document.createElement('a');
-          ytBtn.href = buildYTHowtoLink(dish);
-          ytBtn.target = '_blank';
-          ytBtn.rel = 'noopener';
-          ytBtn.className = 'btn-primary';
-          ytBtn.style.display = 'inline-block';
-          ytBtn.style.marginTop = '8px';
-          ytBtn.textContent = 'ไปดูบน YouTube';
-          links.appendChild(ytBtn);
-
-          document.getElementById('howtoModal').style.display = 'flex';
-        }
-
-        async function openHowtoSmart(dishName, source) {
-          // 1) ลอง API (กรณี backend รวมไฟล์ให้)
-          try {
-            const data = await fetchHowto(dishName);
-            return renderHowtoModal(data, dishName);
-          } catch (_) { }
-
-          // 2) ไม่เจอ → ลองอ่านไฟล์ทั้งหมด
-          try {
-            const data = await fetchHowtoFromStatic(dishName);
-            return renderHowtoModal(data, dishName);
-          } catch (_) { }
-
-          // 3) ไม่เจอทั้งคู่ → เปิดโมดัลว่างพร้อมปุ่ม YouTube
-          return renderHowtoModal({ title: dishName, steps: [] }, dishName);
-        }
-
-        window.openHowtoSmart = openHowtoSmart;
-        window.renderHowtoModal = renderHowtoModal;
-
-    </script>
-
+    document.getElementById('btnSpeak').addEventListener('click', speakHowto);
+  </script>
 </body>
 
 </html>
