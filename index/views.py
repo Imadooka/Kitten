@@ -1526,3 +1526,30 @@ def api_howto(request):
         "videos": found.get("videos", []),
     }
     return JsonResponse(resp)
+
+@require_POST
+def decrement_ingredient(request, pk):
+    ing = get_object_or_404(Ingredient, pk=pk)
+
+    # ถ้าเหลือ 0 อยู่แล้ว
+    if ing.quantity <= 0:
+        return JsonResponse({"ok": False, "error": "quantity already 0"}, status=400)
+
+    # ลดจำนวนลง 1
+    ing.quantity -= 1
+
+    # ถ้าเหลือ 0 หลังจากลด ให้ลบออกเลย
+    if ing.quantity <= 0:
+        ing.delete()
+        return JsonResponse({"ok": True, "deleted": True})
+
+    # ถ้ายังเหลืออยู่ก็แค่บันทึก
+    ing.save(update_fields=["quantity"])
+    return JsonResponse({"ok": True, "quantity": ing.quantity})
+
+@require_POST
+def increment_ingredient(request, pk):
+    # เพิ่มแบบ atomic
+    Ingredient.objects.filter(pk=pk).update(quantity=F('quantity') + 1)
+    ing = get_object_or_404(Ingredient, pk=pk)
+    return JsonResponse({"ok": True, "quantity": ing.quantity})

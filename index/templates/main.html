@@ -346,6 +346,11 @@
     .btn:hover {
       background: #e2e8f0;
     }
+
+    .qty-step:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -401,7 +406,8 @@
                   {% endif %}
               </p>
 
-              <div class="qty-editor" data-iid="{{ ing.id }}" data-iname="{{ ing.name|escapejs }}">
+              <div class="qty-editor" data-iid="{{ ing.id }}" data-iname="{{ ing.name|escapejs }}"
+                data-qty="{{ ing.quantity }}">
                 <button type="button" class="qty-step" data-step="-1">-</button>
                 <span class="qty-delta" id="delta-{{ ing.id }}">0</span>
                 <button type="button" class="qty-step" data-step="1">+</button>
@@ -949,23 +955,32 @@
 
     // ---------- Quantity editor ----------
     document.addEventListener('click', async (e) => {
-      // กด - / +
+      // --- ปุ่ม - / + ---
       const stepBtn = e.target.closest('.qty-step');
       if (stepBtn) {
         const wrap = stepBtn.closest('.qty-editor');
         const id = wrap.dataset.iid;
         const step = parseInt(stepBtn.dataset.step, 10);
-        const span = document.getElementById(`delta-${id}`);
-        let v = parseInt(span.textContent || '0', 10) + step;
 
-        span.textContent = v;
-        // ซ่อนปุ่มถ้า delta = 0, โชว์เมื่อ != 0
+        const span = document.getElementById(`delta-${id}`);
+        const currentDelta = parseInt(span.textContent || '0', 10);
+
+        const have = parseInt(wrap.dataset.qty || '0', 10); // จำนวนที่มีจริง
+        let next = currentDelta + step;
+
+        // กันไม่ให้ลดเกินที่มี (เช่น มี 4 ก็ต่ำสุดได้ -4)
+        const minDelta = -have;
+        if (next < minDelta) next = minDelta;
+
+        span.textContent = next;
+
+        // โชว์/ซ่อนปุ่มยืนยัน
         const bar = document.getElementById(`confirm-${id}`);
-        bar.classList.toggle('hidden', v === 0);
+        bar.classList.toggle('hidden', next === 0);
         return;
       }
 
-      // ยกเลิก -> รีเซ็ตและซ่อน
+      // --- ปุ่ม ยกเลิก ---
       const cancelBtn = e.target.closest('.btn-cancel');
       if (cancelBtn) {
         const id = cancelBtn.dataset.iid;
@@ -974,26 +989,40 @@
         return;
       }
 
-      // บันทึก -> ถ้า delta = 0 ไม่ทำอะไร (และแน่นอนว่าปุ่มจะถูกซ่อนไว้อยู่แล้ว)
+      // --- ปุ่ม บันทึก ---
       const saveBtn = e.target.closest('.btn-save');
       if (saveBtn) {
         const id = saveBtn.dataset.iid;
-        const delta = parseInt(document.getElementById(`delta-${id}`).textContent || '0', 10);
+        const span = document.getElementById(`delta-${id}`);
+        const delta = parseInt(span.textContent || '0', 10);
         if (delta === 0) return;
 
-        const url =
-          delta > 0
-            ? "{% url 'increment_ingredient' 0 %}".replace("/0/", `/${id}/`)
-            : "{% url 'decrement_ingredient' 0 %}".replace("/0/", `/${id}/`);
+        const urlInc = "{% url 'increment_ingredient' 0 %}".replace("/0/", `/${id}/`);
+        const urlDec = "{% url 'decrement_ingredient' 0 %}".replace("/0/", `/${id}/`);
+
+        const postOnce = async (url) => {
+          const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
+          let data = null;
+          try { data = await res.json(); } catch { }
+          if (!res.ok || (data && data.ok === false)) {
+            const msg = (data && (data.error || data.detail)) || `HTTP ${res.status}`;
+            throw new Error(msg);
+          }
+          return data;
+        };
 
         try {
-          for (let i = 0; i < Math.abs(delta); i++) {
-            const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
-            if (!res.ok) throw new Error(await res.text());
+          if (delta > 0) {
+            for (let i = 0; i < delta; i++) await postOnce(urlInc);
+          } else {
+            for (let i = 0; i < Math.abs(delta); i++) {
+              const res = await postOnce(urlDec);
+              if (res.deleted) break; // ถ้าถูกลบออกแล้วไม่ต้องลดต่อ
+            }
           }
           location.reload();
         } catch (err) {
-          alert("อัปเดตไม่สำเร็จ: " + err.message);
+          alert("อัปเดตไม่สำเร็จ: " + (err.message || err));
         }
       }
     });
