@@ -23,14 +23,29 @@ class Ingredient(models.Model):
     )
     prepared_date = models.DateField(default=date.today)
     shelf_life_days = models.PositiveIntegerField(default=7)
+    expiry_date = models.DateField(blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+    # ถ้าไม่ได้กำหนด expiry_date ให้คำนวณจาก prepared_date + shelf_life_days
+        if not self.expiry_date and self.prepared_date:
+            self.expiry_date = self.prepared_date + timedelta(days=self.shelf_life_days)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+    
     @property
-    def expiry_date(self):
-        return self.prepared_date + timedelta(days=self.shelf_life_days)
+    def computed_expiry(self):
+        if self.expiry_date:
+            return self.expiry_date
+        pd = self.prepared_date or date.today()
+        return pd + timedelta(days=self.shelf_life_days or 0)
 
     @property
     def days_remaining(self):
-        return (self.expiry_date - date.today()).days
+        # ใช้ computed_expiry เพื่อกัน None
+        return (self.computed_expiry - date.today()).days
+
 
     @property
     def image_url(self):
