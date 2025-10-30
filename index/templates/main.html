@@ -6,6 +6,7 @@
   <meta charset="UTF-8" />
   <title>วัตถุดิบในครัว</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: 'Kanit', sans-serif;
@@ -53,6 +54,10 @@
       color: #0D47A1;
     }
 
+    .confirm-bar.hidden {
+      display: none !important;
+    }
+
     .container {
       max-width: 1400px;
       margin: auto;
@@ -62,18 +67,15 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      /* 4 คอลัมน์ตายตัว */
       gap: 20px;
     }
 
-    /* Responsive: ลดเหลือ 2 คอลัมน์ถ้าจอเล็ก */
     @media (max-width: 900px) {
       .grid {
         grid-template-columns: repeat(2, 1fr);
       }
     }
 
-    /* Responsive: ลดเหลือ 1 คอลัมน์ถ้าจอเล็กมาก */
     @media (max-width: 500px) {
       .grid {
         grid-template-columns: 1fr;
@@ -121,56 +123,7 @@
       color: #C62828;
     }
 
-    /* วัตถุดิบล่าสุด: 2 คอลัมน์ 2 แถว */
-    .grid-latest {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    /* การ์ดเล็ก */
-    .card-small img {
-      height: 120px;
-    }
-
-    .card-small .card-body {
-      padding: 10px;
-    }
-
-    .card-small h3 {
-      font-size: 14px;
-    }
-
-    .card-small p {
-      font-size: 12px;
-    }
-
-    #voiceStatus {
-      font-size: 12px;
-      color: #1976D2;
-      margin-left: 8px;
-    }
-
-    #helpVoice {
-      font-size: 12px;
-      color: #555;
-      margin-top: 6px;
-    }
-
-    .btn-primary {
-      margin-top: 12px;
-      background: #1976D2;
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .hidden {
-      display: none;
-    }
-
+    /* Modal: สูตรอาหาร */
     .modal-panel {
       background: #fff;
       width: min(720px, 92vw);
@@ -188,25 +141,31 @@
       background: #fff;
       z-index: 2;
       display: flex;
+      justify-content: flex-end;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
       padding-bottom: 8px;
       border-bottom: 1px solid #eee;
     }
 
-    .modal-close {
-      border: none;
-      background: #F1F5F9;
+    .modal-title {
+      margin: 14px 0 10px;
       color: #0f172a;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
     }
 
-    .modal-actions {
-      display: flex;
-      gap: 8px;
+    .modal-x {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+      z-index: 3;
     }
 
     .src-btn {
@@ -225,16 +184,6 @@
       border-color: #1976D2;
     }
 
-    .modal-title {
-      margin: 14px 0 10px;
-      color: #0f172a;
-    }
-
-    .recipe-list {
-      list-style: disc;
-      padding-left: 22px;
-    }
-
     .section-title {
       margin: 12px 0 6px;
       font-size: 16px;
@@ -242,176 +191,116 @@
       color: #334155;
     }
 
-    .recipe-item strong {
-      font-weight: 600;
+    .recipe-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .recipe-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+      margin: 10px 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+    }
+
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .recipe-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: #0f172a;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .recipe-meta {
-      font-size: 12px;
-      color: #64748b;
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.4;
     }
 
-    .hr {
-      height: 1px;
-      background: #e2e8f0;
-      margin: 12px 0;
+    .recipe-meta .ok {
+      color: #2E7D32;
+      font-weight: 600;
     }
 
-    .modal-panel {
-      position: relative;
+    .recipe-meta .miss {
+      color: #C62828;
+      font-weight: 600;
     }
 
-    /* สำคัญสำหรับปุ่มลอย */
-
-    .modal-x {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      border: 1px solid #e2e8f0;
-      background: #ffffff;
-      color: #0f172a;
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
-      z-index: 3;
-      /* ให้อยู่เหนือ header */
-    }
-
-    /* ให้ปุ่ม Local/API ไปอยู่มุมขวาบนของการ์ด */
-    .modal-header {
-      position: sticky;
-      top: 0;
-      background: #fff;
-      z-index: 2;
-      display: flex;
-      justify-content: flex-end;
-      /* ชิดขวา */
-      align-items: center;
-      gap: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .quantity-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .qty-btn {
+    .howto-btn {
       background: #1976D2;
       color: #fff;
       border: none;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
       cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+      transition: 0.2s;
     }
 
-    .qty-btn:hover {
-      background: #0D47A1;
+    .howto-btn:hover {
+      background: #1565C0;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(21, 101, 192, .25);
     }
 
-    .quantity-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-content: center
-    }
-
-    .qty-btn {
-      background: #1976D2;
-      color: #fff;
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 18px
-    }
-
-    .qty-btn:hover {
-      background: #0D47A1
-    }
-
-    /* modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .55);
+      background: rgba(0, 0, 0, .6);
       display: none;
-      align-items: center;
       justify-content: center;
-      z-index: 10050;
+      align-items: center;
+      z-index: 10000;
     }
 
     .modal-backdrop.is-show {
-      display: flex
-    }
-
-    .modal-box {
-      width: min(420px, 92vw);
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
-      padding: 18px 16px;
-    }
-
-    .modal-title {
-      font-weight: 700;
-      font-size: 18px;
-      margin: 0 0 8px
-    }
-
-    .modal-msg {
-      color: #475569;
-      margin: 8px 0 16px
-    }
-
-    .modal-actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 8px
     }
 
-    .btn {
+    /* HOWTO modal */
+    #howtoModal .btn {
       border: 1px solid #cbd5e1;
       background: #fff;
       color: #0f172a;
       padding: 8px 12px;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: 600
-    }
-
-    .btn-danger {
-      background: #E53935;
-      color: #fff;
-      border-color: #E53935
+      font-weight: 600;
     }
 
     .btn-primary {
       background: #1976D2;
       color: #fff;
-      border-color: #1976D2
+      border-color: #1976D2;
     }
 
-    .btn[disabled] {
-      opacity: .6;
-      cursor: not-allowed
+    .btn-primary:hover {
+      background: #1565C0;
     }
 
+    .hidden {
+      display: none;
+    }
+
+    .quantity-control,
     .qty-editor {
-      margin-top: 8px;
       display: flex;
       align-items: center;
+      gap: 8px;
       justify-content: center;
-      gap: 10px;
     }
 
     .qty-step {
@@ -442,110 +331,20 @@
       margin-top: 10px;
     }
 
-    .hidden {
-      display: none;
-    }
-
-    .btn,
-    .btn-primary {
+    .btn {
       min-width: 90px;
-      /* ความกว้างเท่ากัน */
       text-align: center;
       padding: 8px 12px;
       font-weight: 600;
       border-radius: 8px;
       border: none;
       cursor: pointer;
-    }
-
-    .btn {
       background: #f1f5f9;
       color: #0f172a;
     }
 
     .btn:hover {
       background: #e2e8f0;
-    }
-
-    .btn-primary {
-      background: #1976D2;
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background: #1565C0;
-    }
-
-    /* รายการเมนูในโมดัล */
-    .recipe-list {
-      list-style: none;
-      padding-left: 0;
-      margin: 0;
-    }
-
-    .recipe-item {
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      background: #fff;
-      padding: 14px 16px;
-      margin: 10px 0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
-    }
-
-    /* บรรทัดชื่อ + ปุ่มดูวิธีทำ */
-    .recipe-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* ชื่อเมนู */
-    .recipe-title {
-      font-weight: 700;
-      font-size: 15px;
-      color: #0f172a;
-      margin: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* ปุ่มดูวิธีทำ */
-    .howto-btn {
-      background: #1976D2;
-      color: #fff;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
-      transition: 0.2s;
-    }
-
-    .howto-btn:hover {
-      background: #1565C0;
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(21, 101, 192, .25);
-    }
-
-    /* ส่วน “ใช้ได้ / ขาด” */
-    .recipe-meta {
-      font-size: 13px;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-
-    .recipe-meta .ok {
-      color: #2E7D32;
-      /* เขียว */
-      font-weight: 600;
-    }
-
-    .recipe-meta .miss {
-      color: #C62828;
-      /* แดง */
-      font-weight: 600;
     }
   </style>
 </head>
@@ -565,14 +364,12 @@
     <div style="display:flex; align-items:center; gap:10px;">
       <input id="searchBox" type="text" placeholder="พิมพ์เพื่อค้นหา…"
         style="padding:8px 10px;border:1px solid #90CAF9;border-radius:8px;outline:none;">
-      <button id="voiceBtn"
-        style="border:none;background:#1976D2;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;">
-        🎤
-      </button>
+      <button id="voiceBtn" type="button" aria-pressed="false"
+        style="border:none;background:#1976D2;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;">🎤</button>
+      <span id="voiceStatus" style="font-size:12px;color:#1976D2;margin-left:8px;"></span>
     </div>
 
     <div style="margin-bottom: 24px;">
-
       <div>
         <h2>วัตถุดิบทั้งหมด</h2>
         <div class="grid" id="ingredientContainer">
@@ -604,7 +401,6 @@
                   {% endif %}
               </p>
 
-
               <div class="qty-editor" data-iid="{{ ing.id }}" data-iname="{{ ing.name|escapejs }}">
                 <button type="button" class="qty-step" data-step="-1">-</button>
                 <span class="qty-delta" id="delta-{{ ing.id }}">0</span>
@@ -615,7 +411,6 @@
                 <button type="button" class="btn btn-cancel" data-iid="{{ ing.id }}">ยกเลิก</button>
                 <button type="button" class="btn btn-primary btn-save" data-iid="{{ ing.id }}">บันทึก</button>
               </div>
-
             </div>
           </div>
           {% endfor %}
@@ -623,9 +418,8 @@
       </div>
     </div>
 
-    <!-- Modal -->
-    <div id="recipeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); 
-            justify-content:center; align-items:center; z-index:10000;">
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal-backdrop">
       <div class="modal-panel">
         <button class="modal-x" type="button" aria-label="ปิด" onclick="closeModal()">✕</button>
         <div class="modal-header">
@@ -634,17 +428,14 @@
             <button id="btnSourceApi" class="src-btn" data-source="api">อาหารต่างชาติ</button>
           </div>
         </div>
-
         <h2 id="recipeTitle" class="modal-title">เมนูจากวัตถุดิบ</h2>
-
-        <!-- รายการรวม (เราจะแทรกเป็น section: Local ก่อน แล้ว API ตามมา) -->
         <ul id="recipeList" class="recipe-list"></ul>
       </div>
     </div>
 
-    <!-- HOWTO Modal (แชร์กับทุกหน้า) -->
+    <!-- HOWTO Modal -->
     <div id="howtoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
-  justify-content:center; align-items:center; z-index:10060;">
+         justify-content:center; align-items:center; z-index:10060;">
       <div
         style="background:#fff; width:min(720px,92vw); max-height:85vh; overflow:auto; border-radius:14px; padding:18px;">
         <div
@@ -658,1184 +449,767 @@
         <div id="howtoLinks" style="margin-top:10px"></div>
       </div>
     </div>
+  </div>
 
-
-
-    <script>
-
-      const HOWTO_URL = "{% url 'api_howto' %}";
-      const HOWTO_ALL_URL = "{% url 'api_howto_all' %}";
-
-      async function fetchRecipes(ingredientName) {
-        try {
-          const url = `/api/recipes/${encodeURIComponent(ingredientName)}/`;
-          const res = await fetch(url);
-          const data = await res.json();
-
-          console.log("DEBUG response:", data);
-
-          const list = document.getElementById("recipeList");
-          list.innerHTML = "";
-
-          if (Array.isArray(data) && data.length > 0) {
-            data.forEach(r => {
-              const li = document.createElement("li");
-              li.innerHTML = `
-          <strong>${r.title}</strong><br>
-          <img src="${r.image}" style="width:100px;border-radius:8px;">
-        `;
-              list.appendChild(li);
-            });
-          } else {
-            list.innerHTML = "<li>ไม่พบเมนูจากวัตถุดิบนี้</li>";
+  <script>
+    // ---------- Helpers ----------
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break;
           }
-
-          document.getElementById("recipeTitle").textContent = "เมนูจาก: " + ingredientName;
-          document.getElementById("recipeModal").style.display = "flex";
-
-        } catch (err) {
-          alert("เกิดข้อผิดพลาด: " + err);
         }
       }
-
-      function closeModal() {
-        document.getElementById("recipeModal").style.display = "none";
+      return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    function toThaiLower(s) { return (s || '').toLocaleLowerCase('th-TH'); }
+    function normalizeThaiDigits(str) {
+      if (!str) return '';
+      const map = { '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9' };
+      return str.replace(/[๐-๙]/g, d => map[d] || d);
+    }
+    let _toastTimer = null;
+    function toast(msg) {
+      let el = document.getElementById('voiceToast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'voiceToast';
+        el.style.position = 'fixed';
+        el.style.bottom = '16px';
+        el.style.right = '16px';
+        el.style.padding = '10px 14px';
+        el.style.background = '#1976D2';
+        el.style.color = '#fff';
+        el.style.borderRadius = '8px';
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,.2)';
+        el.style.zIndex = 9999;
+        el.style.transition = 'opacity .2s';
+        document.body.appendChild(el);
       }
+      el.textContent = msg;
+      el.style.opacity = '1';
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2000);
+    }
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'th-TH';
+      window.speechSynthesis.speak(u);
+    }
+    function debounce(fn, ms = 200) {
+      let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }
+    }
 
-
-      // ----- เรียงใกล้หมดอายุก่อน -----
-      document.addEventListener("DOMContentLoaded", function () {
-        const container = document.getElementById("ingredientContainer");
-        const cards = Array.from(container.querySelectorAll(".card"));
-        const sorted = cards.sort((a, b) => parseInt(a.dataset.days) - parseInt(b.dataset.days));
-        sorted.forEach(card => container.appendChild(card));
+    // ---------- Search ----------
+    function filterCardsByQuery(q) {
+      const query = toThaiLower(q).trim();
+      const cards = document.querySelectorAll('#ingredientContainer .card');
+      cards.forEach(card => {
+        const title = card.querySelector('h3')?.textContent || '';
+        const nameOnly = title.split(' (x')[0];
+        const show = toThaiLower(nameOnly).includes(query);
+        card.style.display = show ? '' : 'none';
       });
+    }
 
-      // ----- Utilities -----
-      function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-          const cookies = document.cookie.split(';');
-          for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-              break;
-            }
-          }
-        }
-        return cookieValue;
+    // ---------- Sort by days remaining ----------
+    document.addEventListener("DOMContentLoaded", function () {
+      const container = document.getElementById("ingredientContainer");
+      const cards = Array.from(container.querySelectorAll(".card"));
+      const sorted = cards.sort((a, b) => parseInt(a.dataset.days) - parseInt(b.dataset.days));
+      sorted.forEach(card => container.appendChild(card));
+
+      // ซ่อนปุ่มยกเลิก/บันทึกของทุกการ์ด และรีเซ็ต delta เป็น 0
+      document.querySelectorAll('.confirm-bar').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.qty-delta').forEach(el => el.textContent = '0');
+    });
+
+    // ---------- Voice core ----------
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognizer = null, listening = false;
+    let wizardState = null;
+    let payload = { name: '', quantity: 1, prepared_date: '', expiry_date: '' };
+
+    function setStatus(t) {
+      const s = document.getElementById('voiceStatus');
+      if (s) s.textContent = t || '';
+    }
+    function ensureRecognizer() {
+      if (!SpeechRecognition) { toast('เบราว์เซอร์นี้ไม่รองรับคำสั่งเสียง'); return null; }
+      if (!recognizer) {
+        recognizer = new SpeechRecognition();
+        recognizer.lang = 'th-TH';
+        recognizer.interimResults = false;
+        recognizer.continuous = false;
+        recognizer.onstart = () => { listening = true; setStatus('กำลังฟัง…'); document.getElementById('voiceBtn')?.setAttribute('aria-pressed', 'true'); };
+        recognizer.onend = () => { listening = false; setStatus(''); document.getElementById('voiceBtn')?.setAttribute('aria-pressed', 'false'); };
+        recognizer.onerror = (e) => { listening = false; setStatus('ผิดพลาด: ' + e.error); toast('ไมค์ผิดพลาด: ' + e.error); };
+        recognizer.onresult = (ev) => {
+          const raw = ev.results[0][0].transcript.trim();
+          handleVoice(normalizeThaiDigits(raw));
+        };
       }
-      const csrftoken = getCookie('csrftoken');
-      function toThaiLower(s) { return (s || '').toLocaleLowerCase('th-TH'); }
-      function normalizeThaiDigits(str) {
-        if (!str) return '';
-        const map = { '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9' };
-        return str.replace(/[๐-๙]/g, d => map[d] || d);
+      return recognizer;
+    }
+    function startListening() { const r = ensureRecognizer(); if (!r) return; if (listening) return; try { r.start(); } catch (e) { } }
+    function stopListening() { if (recognizer && listening) { recognizer.stop(); } }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('voiceBtn');
+      if (btn) {
+        btn.addEventListener('click', () => { if (listening) stopListening(); else startListening(); });
       }
-      function toast(msg) {
-        let el = document.getElementById('voiceToast');
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'voiceToast';
-          el.style.position = 'fixed';
-          el.style.bottom = '16px';
-          el.style.right = '16px';
-          el.style.padding = '10px 14px';
-          el.style.background = '#1976D2';
-          el.style.color = '#fff';
-          el.style.borderRadius = '8px';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,.2)';
-          el.style.zIndex = 9999;
-          document.body.appendChild(el);
-        }
-        el.textContent = msg;
-        el.style.opacity = '1';
-        setTimeout(() => { el.style.opacity = '0'; }, 2000);
-      }
-      function speak(text) {
-        if (!('speechSynthesis' in window)) return;
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'th-TH';
-        window.speechSynthesis.speak(u);
+      const searchBox = document.getElementById('searchBox');
+      if (searchBox) searchBox.addEventListener('input', debounce(e => filterCardsByQuery(e.target.value), 200));
+    });
+
+    // ---------- Date parsing ----------
+    function parseIsoDateLike(t) {
+      t = (t || '').replace(/\s+/g, '');
+      const m1 = t.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      if (m1) { const y = m1[1], mo = m1[2].padStart(2, '0'), d = m1[3].padStart(2, '0'); return `${y}-${mo}-${d}`; }
+      const m2 = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+      if (m2) { const d = m2[1].padStart(2, '0'), mo = m2[2].padStart(2, '0'), y = m2[3]; return `${y}-${mo}-${d}`; }
+      return '';
+    }
+
+    function parseSpeechDateToISO(input) {
+      if (!input) return "";
+      const thaiDigits = { '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9' };
+      const normDigits = s => s.replace(/[๐-๙]/g, d => thaiDigits[d] || d);
+      let s = normDigits(String(input)).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[\u200B-\u200D\uFEFF]/g, '');
+      s = s.replace(/^(วันที่|เดท|date)\s*/, '').replace(/(พศ|พ\.ศ\.)/g, 'พศ').replace(/(คศ|ค\.ศ\.)/g, 'คศ');
+
+      const now = new Date();
+      const pad2 = n => String(n).padStart(2, '0');
+
+      if (/^วันนี้$/.test(s)) return now.toISOString().slice(0, 10);
+      if (/^พรุ่งนี้$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
+      if (/^มะรืน(นี้)?$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 2); return d.toISOString().slice(0, 10); }
+      if (/^เมื่อวาน$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
+      let mRel = s.match(/^อีก\s*(\d+)\s*(วัน|สัปดาห์|อาทิตย์|เดือน)$/);
+      if (mRel) {
+        const d = new Date(now); const n = parseInt(mRel[1], 10);
+        if (/วัน/.test(mRel[2])) d.setDate(d.getDate() + n);
+        else if (/(สัปดาห์|อาทิตย์)/.test(mRel[2])) d.setDate(d.getDate() + 7 * n);
+        else d.setMonth(d.getMonth() + n);
+        return d.toISOString().slice(0, 10);
       }
 
-      // ----- ค้นหา -----
-      function filterCardsByQuery(q) {
-        const query = toThaiLower(q).trim();
-        const cards = document.querySelectorAll('#ingredientContainer .card');
-        cards.forEach(card => {
-          const title = card.querySelector('h3')?.textContent || '';
-          const nameOnly = title.split(' (x')[0];
-          const show = toThaiLower(nameOnly).includes(query);
-          card.style.display = show ? '' : 'none';
+      const TH_MONTHS = {
+        'มกราคม': 1, 'ม.ค.': 1, 'มค': 1, 'มกรา': 1, 'กุมภาพันธ์': 2, 'ก.พ.': 2, 'กพ': 2,
+        'มีนาคม': 3, 'มี.ค.': 3, 'มีค': 3, 'มีนา': 3, 'เมษายน': 4, 'เม.ย.': 4, 'เมย': 4,
+        'พฤษภาคม': 5, 'พ.ค.': 5, 'พค': 5, 'มิถุนายน': 6, 'มิ.ย.': 6, 'มิย': 6,
+        'กรกฎาคม': 7, 'ก.ค.': 7, 'กค': 7, 'กรกฎา': 7, 'กรา': 7, 'สิงหาคม': 8, 'ส.ค.': 8, 'สค': 8, 'สิงหา': 8,
+        'กันยายน': 9, 'ก.ย.': 9, 'กย': 9, 'กันยา': 9, 'ตุลาคม': 10, 'ต.ค.': 10, 'ตค': 10, 'ตุลา': 10,
+        'พฤศจิกายน': 11, 'พ.ย.': 11, 'พย': 11, 'พฤศจิกา': 11, 'ธันวาคม': 12, 'ธ.ค.': 12, 'ธค': 12, 'ธันวา': 12
+      };
+      const EN_MONTHS = { jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12 };
+
+      const normalizeYear = (yRaw) => {
+        let y = parseInt(yRaw, 10); if (isNaN(y)) return null;
+        if (/คศ/.test(s)) { if (y < 100) y += 2000; return y; }
+        if (/พศ/.test(s)) { if (y < 100) y += 2500; if (y < 2400) y += 543; return y; }
+        if (y < 100) return 2000 + y;      // 68 -> 2068 (หากต้องการเดาเป็น พ.ศ. ให้ปรับเป็น 2500+y)
+        if (y > 2400) return y - 543;      // 2568 -> 2025
+        return y;                          // 2025
+      };
+
+      let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      if (m) { const y = normalizeYear(m[1]); const mo = +m[2]; const d = +m[3]; if (y) return `${y}-${pad2(mo)}-${pad2(d)}`; }
+      m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+      if (m) { const y = normalizeYear(m[3]); const mo = +m[2]; const d = +m[1]; if (y) return `${y}-${pad2(mo)}-${pad2(d)}`; }
+
+      m = s.match(/^(\d{1,2})\s*([ก-๙\.]+)\s*(\d{2,4})?$/);
+      if (m && TH_MONTHS[m[2]]) {
+        const d = +m[1], mo = TH_MONTHS[m[2]]; let y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
+        if (!m[3]) { const test = new Date(now.getFullYear(), mo - 1, d); if (test < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y += 1; }
+        return `${y}-${pad2(mo)}-${pad2(d)}`;
+      }
+
+      m = s.match(/^(?:(\d{1,2})\s+([a-z]+)\s+(\d{2,4})|([a-z]+)\s+(\d{1,2})\s+(\d{2,4}))$/i);
+      if (m) {
+        let d, moName, y;
+        if (m[1]) { d = +m[1]; moName = m[2]; y = normalizeYear(m[3]); }
+        else { moName = m[4]; d = +m[5]; y = normalizeYear(m[6]); }
+        const mo = EN_MONTHS[moName] || EN_MONTHS[moName?.slice(0, 3)];
+        if (mo && y) return `${y}-${pad2(mo)}-${pad2(d)}`;
+      }
+
+      m = s.match(/^วันที่?\s*(\d{1,2})\s*(เดือน)?\s*(\d{1,2})\s*(ปี)?\s*(\d{2,4})$/);
+      if (m) { const d = +m[1], mo = +m[3], y = normalizeYear(m[5]); if (y) return `${y}-${pad2(mo)}-${pad2(d)}`; }
+
+      m = s.match(/^(\d{1,2})([ก-๙]+)(\d{2,4})?$/);
+      if (m && TH_MONTHS[m[2]]) {
+        const d = +m[1], mo = TH_MONTHS[m[2]]; const y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
+        return `${y}-${pad2(mo)}-${pad2(d)}`;
+      }
+
+      console.warn('Unparsed date phrase:', input);
+      return "";
+    }
+
+    // ---------- Policy parsing (single version) ----------
+    function policyFromThai(answer) {
+      const raw = normalizeThaiDigits(answer || "");
+      const t = raw.toLowerCase().trim();
+
+      if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t) || /\b(latest|newest)\b/.test(t)) return { policy: "newest" };
+      if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t) || /\b(oldest)\b/.test(t)) return { policy: "oldest" };
+      if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t) || /\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
+      if (/(หมดอายุแล้ว|หมดอายุ)/.test(t) || /\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
+
+      let iso = parseSpeechDateToISO(t);
+      if (!iso) {
+        const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/);
+        if (m) iso = parseSpeechDateToISO(m[1]);
+      }
+      if (iso) return { policy: "by_date", target_date: iso };
+
+      return null;
+    }
+
+    // ---------- Voice: API helpers ----------
+    async function submitVoicePayload() {
+      try {
+        if (!payload.expiry_date) { const d = new Date(); d.setDate(d.getDate() + 7); payload.expiry_date = d.toISOString().slice(0, 10); }
+
+        const res = await fetch("{% url 'voice_add_ingredient' %}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify(payload)
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        let data;
+        try { data = await res.json(); } catch { throw new Error('JSON parse error'); }
+
+        if (data.ok) { toast('บันทึกแล้ว: ' + payload.name); speak('บันทึกวัตถุดิบเรียบร้อย'); window.location.reload(); }
+        else { toast('บันทึกล้มเหลว: ' + (data.error || '')); speak('บันทึกล้มเหลว'); }
+      } catch (err) { toast('ผิดพลาด ' + err.message); speak('เกิดข้อผิดพลาด'); }
+    }
+
+    async function sendDeleteVoice({ name, amount, policy, target_date }) {
+      const body = { name, amount, policy };
+      if (target_date) body.target_date = target_date;
+
+      try {
+        const res = await fetch("{% url 'voice_delete_ingredient' %}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!data.ok) { const err = data.error || "ลบไม่สำเร็จ"; toast(err); speak("ไม่สามารถลบวัตถุดิบได้"); return; }
+
+        let msg = `ลบ ${name} เรียบร้อยแล้ว`;
+        if (policy === "expired_only") msg = `ลบ ${name} ที่หมดอายุแล้วเรียบร้อย`;
+        else if (policy === "nearest_expiry") msg = `ลบ ${name} ที่ใกล้หมดอายุเรียบร้อย`;
+        else if (policy === "newest") msg = `ลบ ${name} ล็อตล่าสุดเรียบร้อย`;
+        else if (policy === "oldest") msg = `ลบ ${name} ล็อตเก่าสุดเรียบร้อย`;
+        else if (policy === "by_date" && target_date) msg = `ลบ ${name} ของวันที่ ${target_date} เรียบร้อย`;
+
+        toast(msg); speak(msg); setTimeout(() => location.reload(), 1200);
+      } catch (err) {
+        toast("เกิดข้อผิดพลาด: " + err.message); speak("เกิดข้อผิดพลาดในการลบวัตถุดิบ");
       }
-      document.addEventListener('DOMContentLoaded', () => {
-        const searchBox = document.getElementById('searchBox');
-        if (searchBox) {
-          searchBox.addEventListener('input', e => filterCardsByQuery(e.target.value));
-        }
-      });
+    }
 
-      // ----- ลบผ่านเสียง (API) -----
-      async function voiceDelete(name, amount) {
-        try {
-          const res = await fetch("{% url 'voice_delete_ingredient' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-            body: JSON.stringify({ name, amount })
-          });
-          const data = await res.json();
-          if (!data.ok) { toast(data.error || "ลบไม่สำเร็จ"); speak("ลบไม่สำเร็จ"); return; }
-          if (data.deleted_all) { toast(`ลบทั้งหมด: ${name}`); speak("ลบทั้งหมดแล้ว"); }
-          else { toast(`ลบ ${name} ออก ${data.deleted} เหลือ ${data.remaining}`); speak(`ลบออก ${data.deleted} เหลือ ${data.remaining}`); }
-          window.location.reload();
-        } catch (err) { toast("ผิดพลาด: " + err); speak("เกิดข้อผิดพลาด"); }
-      }
+    async function probeLots(name) {
+      try {
+        const res = await fetch(`/api/lots/?name=${encodeURIComponent(name)}`);
+        if (!res.ok) throw 0;
+        return await res.json(); // {ok, lots, has_expired}
+      } catch { return { ok: false }; }
+    }
 
-      // ----- Voice Wizard: เพิ่ม/ค้นหา/ลบ -----
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      let recognizer = null, listening = false;
-      let wizardState = null;
-      let payload = { name: '', quantity: 1, prepared_date: '', expiry_date: '' };
+    function speakTH(text, opts = {}) {
+      if (!('speechSynthesis' in window)) return;
+      const synth = window.speechSynthesis; try { synth.cancel(); } catch (e) { }
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'th-TH';
 
-      function setStatus(t) {
-        let s = document.getElementById('voiceStatus');
-        if (!s) { s = document.createElement('span'); s.id = 'voiceStatus'; }
-        const nav = document.querySelector('.navbar');
-        if (nav && !s.parentNode) nav.appendChild(s);
-        s.textContent = t || '';
-      }
-      function ensureRecognizer() {
-        if (!SpeechRecognition) { alert('เบราว์เซอร์นี้ไม่รองรับคำสั่งเสียง'); return null; }
-        if (!recognizer) {
-          recognizer = new SpeechRecognition();
-          recognizer.lang = 'th-TH';
-          recognizer.interimResults = false;
-          recognizer.continuous = false;
-          recognizer.onstart = () => { listening = true; setStatus('กำลังฟัง…'); };
-          recognizer.onend = () => { listening = false; setStatus(''); };
-          recognizer.onerror = (e) => { listening = false; setStatus('ผิดพลาด: ' + e.error); };
-          recognizer.onresult = (ev) => {
-            const raw = ev.results[0][0].transcript.trim();
-            handleVoice(normalizeThaiDigits(raw));
-          };
-        }
-        return recognizer;
-      }
-      function startListening() { const r = ensureRecognizer(); if (!r) return; if (listening) return; try { r.start(); } catch (e) { } }
-      function stopListening() { if (recognizer && listening) { recognizer.stop(); } }
-      document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('voiceBtn');
-        if (btn) { btn.addEventListener('click', () => { if (listening) stopListening(); else startListening(); }); }
-      });
+      const pickVoice = () => {
+        const vs = synth.getVoices() || [];
+        const th = vs.find(v => /th(-|_|$)/i.test(v.lang) || /Thai/i.test(v.name));
+        if (th) u.voice = th;
+      };
+      if (synth.onvoiceschanged !== undefined) synth.addEventListener('voiceschanged', pickVoice, { once: true });
+      pickVoice();
 
-      function parseIsoDateLike(t) {
-        t = (t || '').replace(/\s+/g, '');
-        const m1 = t.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-        if (m1) { const y = m1[1], mo = m1[2].padStart(2, '0'), d = m1[3].padStart(2, '0'); return `${y}-${mo}-${d}`; }
-        const m2 = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-        if (m2) { const d = m2[1].padStart(2, '0'), mo = m2[2].padStart(2, '0'), y = m2[3]; return `${y}-${mo}-${d}`; }
-        return '';
-      }
+      if (opts.rate) u.rate = opts.rate;
+      if (opts.pitch) u.pitch = opts.pitch;
+      u.onend = () => opts.onend && opts.onend();
+      synth.speak(u);
+    }
 
-      async function submitVoicePayload() {
-        try {
-          // final guard
-          if (!payload.expiry_date) {
-            const d = new Date(); d.setDate(d.getDate() + 7);
-            payload.expiry_date = d.toISOString().slice(0, 10);
-          }
+    function speakOut(text, { lang = 'en-US', rate, pitch, onend } = {}) {
+      if (!('speechSynthesis' in window)) return;
+      const synth = window.speechSynthesis; try { synth.cancel(); } catch (e) { }
+      const u = new SpeechSynthesisUtterance(text); u.lang = lang;
+      const pickVoice = () => {
+        const vs = synth.getVoices() || [];
+        const vv = vs.find(v => v.lang?.toLowerCase().startsWith(lang.toLowerCase()));
+        if (vv) u.voice = vv;
+      };
+      if (synth.onvoiceschanged !== undefined) synth.addEventListener('voiceschanged', pickVoice, { once: true });
+      pickVoice();
+      if (rate) u.rate = rate; if (pitch) u.pitch = pitch;
+      u.onend = () => onend && onend();
+      synth.speak(u);
+    }
 
-          const res = await fetch("{% url 'voice_add_ingredient' %}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (data.ok) {
-            toast('บันทึกแล้ว: ' + payload.name); speak('บันทึกวัตถุดิบเรียบร้อย');
-            window.location.reload();
-          } else {
-            toast('บันทึกล้มเหลว: ' + (data.error || '')); speak('บันทึกล้มเหลว');
-          }
-        } catch (err) { toast('ผิดพลาด ' + err); speak('เกิดข้อผิดพลาด'); }
-      }
-
-      // ---------- ONE-SHOT ADD PARSER ----------
-      function parseOneShotAdd(thText) {
-        // แปลงเลขไทย -> อักษรเล็ก -> ตัดช่องว่างส่วนเกิน
-        const raw = normalizeThaiDigits(thText || "");
-        const t = raw.toLocaleLowerCase('th-TH').replace(/\s+/g, ' ').trim();
-
-        // รองรับคำขึ้นต้น: เพิ่ม | ใส่ | แอด
-        if (!/^(เพิ่ม|ใส่|แอด)/.test(t)) return null;
-        let s = t.replace(/^(?:เพิ่ม|ใส่|แอด)\s*/, '').trim();
-
-        // ดึง "วันหมดอายุ ..." ที่พูดต่อท้าย (ถ้ามี)
-        // เช่น "เพิ่ม แครอท 2 ชิ้น วันหมดอายุ 10 ม.ค. 2569"
-        let dateISO = "";
-        const mDate = s.match(/(?:วันหมดอายุ|หมดอายุ|วันที่|เดท|date)\s+(.+)$/i);
-        if (mDate) {
-          dateISO = parseSpeechDateToISO(mDate[1]);
-          if (dateISO) {
-            s = s.slice(0, mDate.index).trim(); // ตัดส่วนวันที่ออกจากสตริงหลัก
-          }
-        }
-
-        const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
-        const patterns = [
-          new RegExp(`^([^\\d].*?)\\s+(\\d+)\\s*${unit}$`),   // ชื่อก่อน เลขตาม
-          new RegExp(`^(\\d+)\\s*${unit}\\s+(.+?)$`),         // เลขก่อน ชื่อตาม
-          new RegExp(`^(.+?)$`)                               // ชื่ออย่างเดียว
-        ];
-
-        let name = "", qty = 1;
-
-        // ลอง pattern 1
-        let m = s.match(patterns[0]);
-        if (m) {
-          name = (m[1] || "").trim();
-          qty = parseInt(m[2], 10) || 1;
-        } else {
-          // ลอง pattern 2
-          m = s.match(patterns[1]);
-          if (m) {
-            qty = parseInt(m[1], 10) || 1;
-            name = (m[3] || m[2] || "").trim();
-          } else {
-            // ลอง pattern 4 (เช่น "ไข่3ฟอง" -> แยกเลขออก)
-            const glued = s.match(/^([^\d]+?)(\d+)\s*(?:อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?$/);
-            if (glued) {
-              name = glued[1].trim();
-              qty = parseInt(glued[2], 10) || 1;
-            } else {
-              // สุดท้าย: pattern 3 ชื่ออย่างเดียว
-              name = s.trim();
-              qty = 1;
-            }
-          }
-        }
-
-        // ล้างช่องว่างซ้ำ
-        name = name.replace(/\s+/g, ' ').trim();
-        if (!name) return null;
-
-        return { name, quantity: Math.max(1, qty), dateISO }; // dateISO อาจว่างได้
-      }
-
-      function handleVoice(text) {
-        const t = toThaiLower(text);
-
-        // --- ONE-SHOT ADD: "เพิ่ม แครอท 2 ชิ้น [วันหมดอายุ ...]" ---
-        let addOS = parseOneShotAdd(t);
-        if (addOS) {
-          const today = new Date();
-          const next7 = new Date(); next7.setDate(today.getDate() + 7);
-
-          payload = {
-            name: addOS.name,
-            quantity: addOS.quantity,
-            prepared_date: today.toISOString().slice(0, 10),
-            expiry_date: addOS.dateISO || next7.toISOString().slice(0, 10)
-          };
-
-          if (addOS.dateISO) {
-            wizardState = null;
-            toast(`เพิ่ม: ${payload.name} x${payload.quantity} (หมดอายุ ${payload.expiry_date})`);
-            speak('บันทึกวัตถุดิบแล้ว');
-            submitVoicePayload();
-          } else {
-            wizardState = 'expiry';
-            toast(`เพิ่ม: ${payload.name} x${payload.quantity} | พูดวันหมดอายุ หรือพูด "ข้าม"`);
-            speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม');
-          }
-          return;
-        }
-
-        // คำสั่งระบบ
-        if (/(หยุดฟัง)/.test(t)) { stopListening(); speak('หยุดฟังแล้ว'); return; }
-        if (/(เริ่มฟัง)/.test(t)) { startListening(); return; }
-        if (/(รีโหลด|โหลดใหม่|รีเฟรช)/.test(t)) { location.reload(); return; }
-
-        // เริ่มวิซาร์ดเพิ่มแบบเดิม (ชื่อ → จำนวน → วันหมดอายุ)
-        if (wizardState === null && /(เพิ่มวัตถุดิบ|เพิ่มของ|เพิ่มใหม่)/.test(t)) {
-          const today = new Date();
-          const next7 = new Date(); next7.setDate(today.getDate() + 7);
-          payload = {
-            name: '',
-            quantity: 1,
-            prepared_date: today.toISOString().slice(0, 10),
-            expiry_date: next7.toISOString().slice(0, 10)
-          };
-          wizardState = 'name';
-          toast('เริ่มเพิ่มวัตถุดิบ: กรุณาพูดชื่อ');
-          speak('กรุณาพูดชื่อวัตถุดิบ');
-          return;
-        }
-        if (wizardState === 'name') {
-          let name = t.replace(/^ชื่อ\s*/, '').trim();
-          if (!name) { toast('ไม่ได้ยินชื่อ'); speak('ขอชื่ออีกครั้ง'); return; }
-          payload.name = name; wizardState = 'quantity';
-          toast('ได้ชื่อ: ' + name + ' | พูดจำนวน เช่น 3'); speak('ได้ชื่อแล้ว กรุณาพูดจำนวน'); return;
-        }
-        if (wizardState === 'quantity') {
-          let q = t.replace(/^จำนวน\s*/, '').trim().replace(/[^0-9]/g, '');
-          const num = parseInt(q || '1', 10) || 1;
-          payload.quantity = Math.max(1, num);
-          wizardState = 'expiry';
-          const d = new Date(); d.setDate(d.getDate() + 7);
-          payload.expiry_date = d.toISOString().slice(0, 10);
-          toast('จำนวน: ' + payload.quantity + ' | พูดวันหมดอายุ หรือพูด "ข้าม"');
-          speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม'); return;
-        }
-        if (wizardState === 'expiry') {
-          const skip = /(ข้าม|ข้ามไป|ไม่ระบุ|ไม่ใส่)/.test(t);
-          if (!skip) {
-            let s = t.replace(/^วันหมดอายุ\s*/, '').trim();
-            let parsed = parseSpeechDateToISO(s) || parseIsoDateLike(s);
-            if (parsed) payload.expiry_date = parsed;
-          }
-          if (!payload.expiry_date) {
-            const d = new Date(); d.setDate(d.getDate() + 7);
-            payload.expiry_date = d.toISOString().slice(0, 10);
-          }
-          wizardState = null;
-          submitVoicePayload();
-          return;
-        }
-
-
-        // ค้นหา
-        let m = t.match(/^(ค้นหา|หา)\s+(.+)$/);
-        if (m && m[2]) {
-          const q = m[2].trim();
-          const box = document.getElementById('searchBox'); if (box) box.value = q;
-          filterCardsByQuery(q); toast('ค้นหา: ' + q); speak('กำลังค้นหา'); return;
-        }
-
-
-        // ----- ลบทั้งหมด / ลบบางส่วน (เวอร์ชันกันพลาดช่องว่าง) -----
-        const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
-        const cleanTH = (s) => (s || "").replace(/\s+/g, " ").trim();
-
-        // 1) ลบ X ที่หมดอายุแล้ว  (รองรับ "ลบปีกไก่ที่หมดอายุแล้ว" / "ลบ ปีกไก่ ที่หมดอายุแล้ว")
-        m = t.match(/^ลบ\s*([^\d].*?)\s*(ที่หมดอายุแล้ว|หมดอายุแล้ว)\s*$/);
-        if (m) {
-          return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all", policy: "expired_only" });
-        }
-
-        // 2) ลบ X ที่ใกล้หมดอายุ
-        m = t.match(/^ลบ\s*([^\d].*?)\s*(ที่ใกล้หมดอายุ|ใกล้หมดอายุ)\s*$/);
-        if (m) {
-          return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all", policy: "nearest_expiry" });
-        }
-
-        // 3) ลบ X ทั้งหมด / ทั้งกอง   (สำคัญ: รองรับไม่มีช่องว่างหลัง "ลบ")
-        m = t.match(/^ลบ\s*([^\d].*?)\s*(ทั้งหมด|ทั้งกอง)\s*$/);
-        if (m) {
-          return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all" });
-        }
-
-        // 4) ลบแบบระบุจำนวน  (เช่น "ลบ ไข่ 3 ฟอง", "ลบ3ฟองไข่", "ลบ 2 ฟอง ไข่")
-        const patterns = [
-          new RegExp(`^ลบ\\s*([^\d].*?)\\s+(\\d+)\\s*${unit}\\s*$`), // ชื่อก่อน เลขตามหลัง
-          new RegExp(`^เอาออก\\s*([^\d].*?)\\s+(\\d+)\\s*${unit}\\s*$`),
-          new RegExp(`^ลบ\\s*(\\d+)\\s*${unit}\\s+(.+?)\\s*$`),       // เลขก่อน ชื่อตามหลัง
-          new RegExp(`^เอาออก\\s*(\\d+)\\s*${unit}\\s+(.+?)\\s*$`),
-          new RegExp(`^ลบ([^\d].*?)(\\d+)\\s*${unit}\\s*$`),          // ติดกันเช่น "ลบไข่3ฟอง"
-          new RegExp(`^เอาออก([^\d].*?)(\\d+)\\s*${unit}\\s*$`)
-        ];
-
-        for (const re of patterns) {
-          m = t.match(re);
-          if (m) {
-            let name, num;
-            if (re === patterns[2] || re === patterns[3]) { // เลขมาก่อน
-              num = parseInt(m[1], 10);
-              name = cleanTH(m[3] || m[2]);
-            } else {                                        // ชื่อมาก่อน
-              name = cleanTH(m[1] || m[4] || "");
-              num = parseInt(m[2], 10);
-            }
-            if (name && num > 0) return disambiguateAndDelete({ name, amount: num });
-          }
-        }
-
-        // 5) Fallback: "ลบ<ชื่อ>" (ไม่มีคำว่า ทั้งหมด แต่ตั้งใจลบทั้งหมด)
-        m = t.match(/^ลบ\s*(.+)\s*$/) || t.match(/^เอาออก\s*(.+)\s*$/);
-        if (m) {
-          return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all" });
-        }
-
-        toast('ยังไม่รู้จักคำสั่ง: ' + text);
-
-        // ====== PROBE: ตรวจว่ามีหลายล็อตไหม (มี endpoint แล้วจะใช้, ไม่มีก็ไม่เป็นไร) ======
-        async function probeLots(name) {
-          try {
-            const res = await fetch(`/api/lots/?name=${encodeURIComponent(name)}`);
-            if (!res.ok) throw 0;
-            return await res.json(); // {ok, lots, has_expired}
-          } catch {
-            return { ok: false }; // ไม่มี endpoint -> ให้ถามเสมอ
-          }
-        }
-
-        // ====== พูด + ฟังคำตอบครั้งเดียว ======
-        function ttsSpeak(text) {
-          if (!('speechSynthesis' in window)) return;
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = 'th-TH';
-          speechSynthesis.speak(u);
-        }
-
-        function listenOnceTH() {
-          return new Promise((resolve, reject) => {
+    function speakEN_thenListenTH(promptText) {
+      return new Promise((resolve) => {
+        try { if (recognizer && listening) recognizer.stop(); } catch (e) { }
+        speakOut(promptText, {
+          lang: 'en-US',
+          rate: 1.0,
+          pitch: 1.0,
+          onend: () => {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) return reject(new Error('no SR'));
+            if (!SR) return resolve("");
             const r = new SR();
             r.lang = 'th-TH';
             r.interimResults = false;
             r.continuous = false;
-            r.onresult = ev => resolve((ev.results[0][0].transcript || '').trim());
-            r.onerror = e => reject(e);
-            try { r.start(); } catch (e) { reject(e); }
-          });
-        }
-
-        function policyFromThai(answer) {
-          const t = (answer || '').toLowerCase().trim();
-
-          // ไทย
-          if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t)) return { policy: "newest" };
-          if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t)) return { policy: "oldest" };
-          if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t)) return { policy: "nearest_expiry" };
-          if (/(หมดอายุแล้ว|หมดอายุ)/.test(t)) return { policy: "expired_only" };
-
-          // อังกฤษ
-          if (/\b(latest|newest)\b/.test(t)) return { policy: "newest" };
-          if (/\b(oldest)\b/.test(t)) return { policy: "oldest" };
-          if (/\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
-          if (/\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
-
-          // วันที่ (ไทย/อังกฤษ/ISO)
-          let iso = parseSpeechDateToISO(t);
-          if (!iso) {
-            const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/); // รับทุกอย่างหลังคำว่า date/วันที่
-            if (m) iso = parseSpeechDateToISO(m[1]);
+            r.onresult = ev => resolve((ev.results?.[0]?.[0]?.transcript || '').trim());
+            r.onerror = () => resolve("");
+            try { r.start(); } catch { resolve(""); }
           }
-          if (iso) return { policy: "by_date", target_date: iso };
-
-          return null;
-        }
-
-        // ====== ถ้ามีหลายล็อต -> ถามกลับ แล้วส่งลบด้วย policy ======
-        async function disambiguateAndDelete({ name, amount }) {
-          try {
-            const info = await probeLots(name);
-            const mustAsk = !info.ok || (info.ok && info.lots > 1);
-
-            if (!mustAsk) {
-              // ล็อตเดียว: ลบที่ใกล้หมดอายุ (พูดยืนยันทีหลังใน sendDeleteVoice)
-              return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
-            }
-
-            // ถามกลับ (มีหลายล็อต) 
-            let hint = "Which batch do you want to delete?";
-            const ans = await speakEN_thenListenTH(hint);
-
-            const pol = policyFromThai(ans);
-            if (!pol) {
-              toast("ยังจับคำตอบไม่ได้ จะใช้แบบใกล้หมดอายุ");
-              return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
-            }
-            return sendDeleteVoice({ name, amount, ...pol });
-
-          } catch (e) {
-            toast("ผิดพลาด: " + (e.message || e));
-          }
-        }
-
-      }
-
-      // === Recipe Modal (Local ก่อน แล้วตามด้วย API) ===
-      let currentIngredient = null;
-      let cacheLocal = null;
-      let cacheApi = null;
-
-      function closeModal() {
-        document.getElementById("recipeModal").style.display = "none";
-      }
-      function setActiveSourceButton(src) {
-        document.querySelectorAll('#recipeModal .src-btn').forEach(b => {
-          b.classList.toggle('is-active', b.dataset.source === src);
         });
-      }
-
-      async function openRecipes(ingredientName) {
-        currentIngredient = ingredientName;
-        cacheLocal = null; cacheApi = null;
-
-        document.getElementById("recipeTitle").textContent = `เมนูจาก: ${ingredientName}`;
-        const list = document.getElementById("recipeList");
-        list.innerHTML = '<li>กำลังโหลดจาก Local…</li>';
-
-        document.getElementById("recipeModal").style.display = "flex";
-        setActiveSourceButton("local");
-
-        // 1) โหลด Local ก่อน
-        cacheLocal = await fetchSection(ingredientName, "local");
-        renderAllSections();
-
-        // 2) โหลด API ต่อ
-        try {
-          cacheApi = await fetchSection(ingredientName, "api");
-          renderAllSections();
-        } catch (e) { console.warn("API error:", e); }
-      }
-
-      async function fetchSection(ingredientName, source) {
-        const url = `/api/recipes/${encodeURIComponent(ingredientName)}/?source=${source}&limit=10`;
-        const res = await fetch(url);
-        if (!res.ok) { throw new Error(`${res.status}: ${await res.text()}`); }
-        return await res.json();
-      }
-
-      function renderAllSections() {
-        const list = document.getElementById("recipeList");
-        list.innerHTML = "";
-
-        const renderSection = (title, data) => {
-          const h = document.createElement("div");
-          h.className = "section-title";
-          h.textContent = title;
-          list.appendChild(h);
-
-          if (!Array.isArray(data) || data.length === 0) {
-            const li = document.createElement("li");
-            li.textContent = "ไม่พบเมนูจากวัตถุดิบนี้";
-            list.appendChild(li);
-            return;
-          }
-
-          data.forEach(r => {
-            const li = document.createElement("li");
-            li.className = "recipe-item";
-
-            const name = r.title || r.name || "เมนู";
-
-            // แถวบน: ชื่อเมนู + ปุ่มขวา
-            const header = document.createElement("div");
-            header.className = "recipe-header";
-
-            const title = document.createElement("p");
-            title.className = "recipe-title";
-            title.textContent = name;
-
-            const btn = document.createElement("button");
-            btn.className = "howto-btn";
-            btn.textContent = "ดูวิธีทำ";
-            btn.onclick = () => openHowtoSmart(name);
-
-            header.appendChild(title);
-            header.appendChild(btn);
-
-            // แถวล่าง: ใช้ได้ / ขาด
-            const meta = document.createElement("div");
-            meta.className = "recipe-meta";
-            const used = (r.used || []).join(", ") || "-";
-            const missing = (r.missing || []).join(", ") || "-";
-            meta.innerHTML = `
-    <span class="ok">ใช้ได้:</span> ${used}<br>
-    <span class="miss">ขาด:</span> ${missing}
-  `;
-
-            li.appendChild(header);
-            li.appendChild(meta);
-            list.appendChild(li);
-          });
-        };
-      }
-
-
-
-      document.getElementById('btnSourceLocal')?.addEventListener('click', () => {
-        setActiveSourceButton("local");
-        showOnly(cacheLocal, "อาหารไทย");
       });
-      document.getElementById('btnSourceApi')?.addEventListener('click', () => {
-        setActiveSourceButton("api");
-        showOnly(cacheApi, "อาหารต่างชาติ");
-      });
+    }
 
-      document.getElementById('recipeModal').addEventListener('click', (e) => {
-        if (e.target.id === 'recipeModal') { closeModal(); }
-      });
-      async function changeQty(id, delta) {
-        const qtyEl = document.getElementById(`qty-${id}`);
-        const current = parseInt(qtyEl.textContent);
-        const newQty = current + delta;
+    async function disambiguateAndDelete({ name, amount }) {
+      try {
+        const info = await probeLots(name);
+        const mustAsk = !info.ok || (info.ok && info.lots > 1);
 
-        if (newQty < 0) {
-          alert("จำนวนไม่สามารถน้อยกว่า 0 ได้");
-          return;
+        if (!mustAsk) return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
+
+        const ans = await speakEN_thenListenTH("Which batch do you want to delete?");
+        const pol = policyFromThai(ans);
+        if (!pol) { toast("ยังจับคำตอบไม่ได้ จะใช้แบบใกล้หมดอายุ"); return sendDeleteVoice({ name, amount, policy: "nearest_expiry" }); }
+        return sendDeleteVoice({ name, amount, ...pol });
+      } catch (e) { toast("ผิดพลาด: " + (e.message || e)); }
+    }
+
+    // ---------- Voice: main handler ----------
+    function parseOneShotAdd(thText) {
+      const raw = normalizeThaiDigits(thText || "");
+      const t = raw.toLocaleLowerCase('th-TH').replace(/\s+/g, ' ').trim();
+      if (!/^(เพิ่ม|ใส่|แอด)/.test(t)) return null;
+      let s = t.replace(/^(?:เพิ่ม|ใส่|แอด)\s*/, '').trim();
+
+      let dateISO = "";
+      const mDate = s.match(/(?:วันหมดอายุ|หมดอายุ|วันที่|เดท|date)\s+(.+)$/i);
+      if (mDate) {
+        dateISO = parseSpeechDateToISO(mDate[1]);
+        if (dateISO) s = s.slice(0, mDate.index).trim();
+      }
+
+      const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
+      const patterns = [
+        new RegExp(`^([^\\d].*?)\\s+(\\d+)\\s*${unit}$`),
+        new RegExp(`^(\\d+)\\s*${unit}\\s+(.+?)$`),
+        new RegExp(`^(.+?)$`)
+      ];
+
+      let name = "", qty = 1;
+      let m = s.match(patterns[0]);
+      if (m) { name = (m[1] || "").trim(); qty = parseInt(m[2], 10) || 1; }
+      else {
+        m = s.match(patterns[1]);
+        if (m) { qty = parseInt(m[1], 10) || 1; name = (m[3] || m[2] || "").trim(); }
+        else {
+          const glued = s.match(/^([^\d]+?)(\d+)\s*(?:อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?$/);
+          if (glued) { name = glued[1].trim(); qty = parseInt(glued[2], 10) || 1; }
+          else { name = s.trim(); qty = 1; }
         }
+      }
 
-        const action = delta > 0 ? "เพิ่ม" : "ลด";
-        const confirmed = confirm(`ต้องการ${action}จำนวนของวัตถุดิบนี้หรือไม่?`);
-        if (!confirmed) return;
+      name = name.replace(/\s+/g, ' ').trim();
+      if (!name) return null;
+      return { name, quantity: Math.max(1, qty), dateISO };
+    }
 
-        try {
-          const url = delta > 0
+    function handleVoice(text) {
+      const t = toThaiLower(text);
+
+      // One-shot add
+      let addOS = parseOneShotAdd(t);
+      if (addOS) {
+        const today = new Date();
+        const next7 = new Date(); next7.setDate(today.getDate() + 7);
+        payload = {
+          name: addOS.name,
+          quantity: addOS.quantity,
+          prepared_date: today.toISOString().slice(0, 10),
+          expiry_date: addOS.dateISO || next7.toISOString().slice(0, 10)
+        };
+        if (addOS.dateISO) {
+          wizardState = null;
+          toast(`เพิ่ม: ${payload.name} x${payload.quantity} (หมดอายุ ${payload.expiry_date})`);
+          speak('บันทึกวัตถุดิบแล้ว');
+          submitVoicePayload();
+        } else {
+          wizardState = 'expiry';
+          toast(`เพิ่ม: ${payload.name} x${payload.quantity} | พูดวันหมดอายุ หรือพูด "ข้าม"`);
+          speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม');
+        }
+        return;
+      }
+
+      if (/(หยุดฟัง)/.test(t)) { stopListening(); speak('หยุดฟังแล้ว'); return; }
+      if (/(เริ่มฟัง)/.test(t)) { startListening(); return; }
+      if (/(รีโหลด|โหลดใหม่|รีเฟรช)/.test(t)) { location.reload(); return; }
+
+      if (wizardState === null && /(เพิ่มวัตถุดิบ|เพิ่มของ|เพิ่มใหม่)/.test(t)) {
+        const today = new Date(); const next7 = new Date(); next7.setDate(today.getDate() + 7);
+        payload = { name: '', quantity: 1, prepared_date: today.toISOString().slice(0, 10), expiry_date: next7.toISOString().slice(0, 10) };
+        wizardState = 'name'; toast('เริ่มเพิ่มวัตถุดิบ: กรุณาพูดชื่อ'); speak('กรุณาพูดชื่อวัตถุดิบ'); return;
+      }
+      if (wizardState === 'name') {
+        let name = t.replace(/^ชื่อ\s*/, '').trim();
+        if (!name) { toast('ไม่ได้ยินชื่อ'); speak('ขอชื่ออีกครั้ง'); return; }
+        payload.name = name; wizardState = 'quantity';
+        toast('ได้ชื่อ: ' + name + ' | พูดจำนวน เช่น 3'); speak('ได้ชื่อแล้ว กรุณาพูดจำนวน'); return;
+      }
+      if (wizardState === 'quantity') {
+        let q = t.replace(/^จำนวน\s*/, '').trim().replace(/[^0-9]/g, '');
+        const num = parseInt(q || '1', 10) || 1;
+        payload.quantity = Math.max(1, num);
+        wizardState = 'expiry';
+        const d = new Date(); d.setDate(d.getDate() + 7);
+        payload.expiry_date = d.toISOString().slice(0, 10);
+        toast('จำนวน: ' + payload.quantity + ' | พูดวันหมดอายุ หรือพูด "ข้าม"'); speak('กรุณาพูดวันหมดอายุ หรือพูดคำว่าข้าม'); return;
+      }
+      if (wizardState === 'expiry') {
+        const skip = /(ข้าม|ข้ามไป|ไม่ระบุ|ไม่ใส่)/.test(t);
+        if (!skip) {
+          let s = t.replace(/^วันหมดอายุ\s*/, '').trim();
+          let parsed = parseSpeechDateToISO(s) || parseIsoDateLike(s);
+          if (parsed) payload.expiry_date = parsed;
+        }
+        if (!payload.expiry_date) { const d = new Date(); d.setDate(d.getDate() + 7); payload.expiry_date = d.toISOString().slice(0, 10); }
+        wizardState = null; submitVoicePayload(); return;
+      }
+
+      // Search by voice
+      let m = t.match(/^(ค้นหา|หา)\s+(.+)$/);
+      if (m && m[2]) {
+        const q = m[2].trim(); const box = document.getElementById('searchBox'); if (box) box.value = q;
+        filterCardsByQuery(q); toast('ค้นหา: ' + q); speak('กำลังค้นหา'); return;
+      }
+
+      // Delete variants
+      const unit = "(อัน|ชิ้น|ลูก|ฟอง|ขวด|ก้อน|ใบ|กิโล|กิโลกรัม|แพ็ค|แพค|ถุง)?";
+      const cleanTH = (s) => (s || "").replace(/\s+/g, " ").trim();
+
+      m = t.match(/^ลบ\s*([^\d].*?)\s*(ที่หมดอายุแล้ว|หมดอายุแล้ว)\s*$/);
+      if (m) return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all", policy: "expired_only" });
+
+      m = t.match(/^ลบ\s*([^\d].*?)\s*(ที่ใกล้หมดอายุ|ใกล้หมดอายุ)\s*$/);
+      if (m) return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all", policy: "nearest_expiry" });
+
+      m = t.match(/^ลบ\s*([^\d].*?)\s*(ทั้งหมด|ทั้งกอง)\s*$/);
+      if (m) return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all" });
+
+      const patterns = [
+        new RegExp(`^ลบ\\s*([^\d].*?)\\s+(\\d+)\\s*${unit}\\s*$`),
+        new RegExp(`^เอาออก\\s*([^\d].*?)\\s+(\\d+)\\s*${unit}\\s*$`),
+        new RegExp(`^ลบ\\s*(\\d+)\\s*${unit}\\s+(.+?)\\s*$`),
+        // แก้บรรทัดนี้ ↓
+        new RegExp(`^เอาออก\\s*(\\d+)\\s*${unit}\\s+(.+?)\\s*$`),
+        new RegExp(`^ลบ([^\d].*?)(\\d+)\\s*${unit}\\s*$`),
+        new RegExp(`^เอาออก([^\d].*?)(\\d+)\\s*${unit}\\s*$`) // ← อันนี้ก็แก้เป็น \\d+
+      ];
+      for (const re of patterns) {
+        m = t.match(re);
+        if (m) {
+          let name, num;
+          if (re === patterns[2] || re === patterns[3]) { num = parseInt(m[1], 10); name = cleanTH(m[3] || m[2]); }
+          else { name = cleanTH(m[1] || m[4] || ""); num = parseInt(m[2], 10); }
+          if (name && num > 0) return disambiguateAndDelete({ name, amount: num });
+        }
+      }
+
+      m = t.match(/^ลบ\s*(.+)\s*$/) || t.match(/^เอาออก\s*(.+)\s*$/);
+      if (m) return disambiguateAndDelete({ name: cleanTH(m[1]), amount: "all" });
+
+      toast('ยังไม่รู้จักคำสั่ง: ' + text);
+    }
+
+    // ---------- Quantity editor ----------
+    document.addEventListener('click', async (e) => {
+      // กด - / +
+      const stepBtn = e.target.closest('.qty-step');
+      if (stepBtn) {
+        const wrap = stepBtn.closest('.qty-editor');
+        const id = wrap.dataset.iid;
+        const step = parseInt(stepBtn.dataset.step, 10);
+        const span = document.getElementById(`delta-${id}`);
+        let v = parseInt(span.textContent || '0', 10) + step;
+
+        span.textContent = v;
+        // ซ่อนปุ่มถ้า delta = 0, โชว์เมื่อ != 0
+        const bar = document.getElementById(`confirm-${id}`);
+        bar.classList.toggle('hidden', v === 0);
+        return;
+      }
+
+      // ยกเลิก -> รีเซ็ตและซ่อน
+      const cancelBtn = e.target.closest('.btn-cancel');
+      if (cancelBtn) {
+        const id = cancelBtn.dataset.iid;
+        document.getElementById(`delta-${id}`).textContent = '0';
+        document.getElementById(`confirm-${id}`).classList.add('hidden');
+        return;
+      }
+
+      // บันทึก -> ถ้า delta = 0 ไม่ทำอะไร (และแน่นอนว่าปุ่มจะถูกซ่อนไว้อยู่แล้ว)
+      const saveBtn = e.target.closest('.btn-save');
+      if (saveBtn) {
+        const id = saveBtn.dataset.iid;
+        const delta = parseInt(document.getElementById(`delta-${id}`).textContent || '0', 10);
+        if (delta === 0) return;
+
+        const url =
+          delta > 0
             ? "{% url 'increment_ingredient' 0 %}".replace("/0/", `/${id}/`)
             : "{% url 'decrement_ingredient' 0 %}".replace("/0/", `/${id}/`);
 
-          const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
-          if (!res.ok) throw new Error(await res.text());
-
-          // อัปเดตจำนวนในหน้า
-          qtyEl.textContent = newQty;
+        try {
+          for (let i = 0; i < Math.abs(delta); i++) {
+            const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
+            if (!res.ok) throw new Error(await res.text());
+          }
+          location.reload();
         } catch (err) {
-          alert("เกิดข้อผิดพลาด: " + err.message);
+          alert("อัปเดตไม่สำเร็จ: " + err.message);
         }
       }
-      let _pending = { id: null, delta: 0, name: "" };
+    });
 
-      // จัดการ - 0 + และปุ่มบันทึก/ยกเลิก แบบไม่รีเฟรชจนกดบันทึก
-      document.addEventListener('click', async (e) => {
-        const stepBtn = e.target.closest('.qty-step');
-        if (stepBtn) {
-          const wrap = stepBtn.closest('.qty-editor');
-          const id = wrap.dataset.iid;
-          const step = parseInt(stepBtn.dataset.step, 10);
-          const span = document.getElementById(`delta-${id}`);
-          let v = parseInt(span.textContent || '0', 10) + step;
-          // ✅ ปล่อยให้ติดลบได้
-          span.textContent = v;
-          document.getElementById(`confirm-${id}`).classList.toggle('hidden', v === 0);
-          return;
-        }
+    // ---------- Recipe modal (single path via showOnly) ----------
+    let currentIngredient = null;
+    let cacheLocal = null, cacheApi = null;
 
-        // ❌ ยกเลิก -> รีเซ็ต delta
-        const cancelBtn = e.target.closest('.btn-cancel');
-        if (cancelBtn) {
-          const id = cancelBtn.dataset.iid;
-          document.getElementById(`delta-${id}`).textContent = '0';
-          document.getElementById(`confirm-${id}`).classList.add('hidden');
-          return;
-        }
+    function closeModal() { document.getElementById("recipeModal").classList.remove('is-show'); }
 
-        // ✅ บันทึก -> เพิ่มหรือลดตามค่า delta
-        const saveBtn = e.target.closest('.btn-save');
-        if (saveBtn) {
-          const id = saveBtn.dataset.iid;
-          const delta = parseInt(document.getElementById(`delta-${id}`).textContent || '0', 10);
-          if (delta === 0) return;
-
-          // แยกเส้นทาง + กับ -
-          const url =
-            delta > 0
-              ? "{% url 'increment_ingredient' 0 %}".replace("/0/", `/${id}/`)
-              : "{% url 'decrement_ingredient' 0 %}".replace("/0/", `/${id}/`);
-
-          try {
-            // ยิง POST เท่าจำนวน delta (ลบหรือเพิ่ม)
-            for (let i = 0; i < Math.abs(delta); i++) {
-              const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
-              if (!res.ok) throw new Error(await res.text());
-            }
-            location.reload();
-          } catch (err) {
-            alert("อัปเดตไม่สำเร็จ: " + err.message);
-          }
-        }
+    function setActiveSourceButton(src) {
+      document.querySelectorAll('#recipeModal .src-btn').forEach(b => {
+        b.classList.toggle('is-active', b.dataset.source === src);
       });
-      // ===================== VOICE DELETE: HELPERS (GLOBAL) ======================
-      async function sendDeleteVoice({ name, amount, policy, target_date }) {
-        const body = { name, amount, policy };
-        if (target_date) body.target_date = target_date;
+    }
 
-        try {
-          const res = await fetch("{% url 'voice_delete_ingredient' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-            body: JSON.stringify(body),
-          });
-          const data = await res.json();
+    async function fetchSection(ingredientName, source) {
+      const url = `/api/recipes/${encodeURIComponent(ingredientName)}/?source=${source}&limit=10`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      let data; try { data = await res.json(); } catch { throw new Error('JSON parse error'); }
+      return data;
+    }
 
-          if (!res.ok || !data.ok) {
-            const err = data.error || "ลบไม่สำเร็จ";
-            toast(err); speakTH("ไม่สามารถลบวัตถุดิบได้");
-            return;
+    function buildYTHowtoLink(dish) {
+      const q = (dish || '').trim().replace(/\s+/g, ' ');
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${q} วิธีทำ`);
+    }
+
+    const HOWTO_URL = "{% url 'api_howto' %}";
+    const HOWTO_ALL_URL = "{% url 'api_howto_all' %}";
+
+    async function fetchHowto(name) {
+      const res = await fetch(HOWTO_URL + '?q=' + encodeURIComponent(name), { headers: { 'Accept': 'application/json' } });
+      let data; try { data = await res.json(); } catch { throw new Error('JSON parse error'); }
+      if (!res.ok || data.ok === false) throw new Error(data.error || ('HTTP ' + res.status));
+      return data; // {title, ingredients, steps, videos?}
+    }
+
+    async function fetchHowtoFromStatic(name) {
+      const res = await fetch(HOWTO_ALL_URL, { headers: { 'Accept': 'application/json' } });
+      let data; try { data = await res.json(); } catch { throw new Error('JSON parse error'); }
+
+      const _normalizeName = (s) => (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
+      let root = data;
+      if (root && typeof root === 'object' && !Array.isArray(root) && root.recipes) root = root.recipes;
+
+      const want = _normalizeName(name);
+      let found = null;
+
+      if (root && typeof root === 'object' && !Array.isArray(root)) {
+        for (const k of Object.keys(root)) {
+          if (_normalizeName(k) === want) { found = root[k]; break; }
+        }
+        if (!found) {
+          for (const v of Object.values(root)) {
+            if (_normalizeName(v?.title || v?.name || '') === want) { found = v; break; }
           }
-
-          let msg = `ลบ ${name} เรียบร้อยแล้ว`;
-          if (policy === "expired_only") msg = `ลบ ${name} ที่หมดอายุแล้วเรียบร้อย`;
-          else if (policy === "nearest_expiry") msg = `ลบ ${name} ที่ใกล้หมดอายุเรียบร้อย`;
-          else if (policy === "newest") msg = `ลบ ${name} ล็อตล่าสุดเรียบร้อย`;
-          else if (policy === "oldest") msg = `ลบ ${name} ล็อตเก่าสุดเรียบร้อย`;
-          else if (policy === "by_date" && target_date) msg = `ลบ ${name} ของวันที่ ${target_date} เรียบร้อย`;
-
-          toast(msg);
-          speakTH(msg);
-          setTimeout(() => location.reload(), 1200);
-
-        } catch (err) {
-          toast("เกิดข้อผิดพลาด: " + err.message);
-          speakTH("เกิดข้อผิดพลาดในการลบวัตถุดิบ");
         }
       }
+      if (!found && Array.isArray(root))
+        found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
 
-      function speakTH(text, opts = {}) {
-        if (!('speechSynthesis' in window)) return;
-        const synth = window.speechSynthesis;
-        try { synth.cancel(); } catch (e) { }
+      if (!found && root && Array.isArray(root.items))
+        found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
 
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'th-TH';
+      if (!found) throw new Error('not-found');
+      return {
+        title: found.title || found.name || name,
+        ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
+        steps: Array.isArray(found.steps) ? found.steps : [],
+        videos: Array.isArray(found.videos) ? found.videos : []
+      };
+    }
 
-        const pickVoice = () => {
-          const vs = synth.getVoices() || [];
-          const th = vs.find(v => /th(-|_|$)/i.test(v.lang) || /Thai/i.test(v.name));
-          if (th) u.voice = th;
-        };
-        if (synth.onvoiceschanged !== undefined) {
-          synth.addEventListener('voiceschanged', pickVoice, { once: true });
-        }
-        pickVoice();
+    function renderHowtoModal(data, fallbackName) {
+      const title = data.title || fallbackName || '';
+      document.getElementById('howtoTitle').textContent = title;
 
-        if (opts.rate) u.rate = opts.rate;
-        if (opts.pitch) u.pitch = opts.pitch;
-        u.onend = () => opts.onend && opts.onend();
-        synth.speak(u);
-      }
+      const ing = (data.ingredients || []);
+      document.getElementById('howtoIngredients').textContent = ing.length ? ('วัตถุดิบ: ' + ing.join(', ')) : '';
 
-      // พูดคำถาม -> แล้วฟัง 1 ครั้ง (กันชนกับ recognizer หลักไว้ให้ด้วย)
-      function speakThenListenTH(promptText) {
-        return new Promise((resolve) => {
-          try { if (recognizer && listening) recognizer.stop(); } catch (e) { }
-          speakTH(promptText, {
-            onend: () => {
-              const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-              if (!SR) return resolve("");
-              const r = new SR();
-              r.lang = 'th-TH';
-              r.interimResults = false;
-              r.continuous = false;
-              r.onresult = ev => resolve((ev.results?.[0]?.[0]?.transcript || '').trim());
-              r.onerror = () => resolve("");
-              try { r.start(); } catch { resolve(""); }
-            }
-          });
+      const stepsWrap = document.getElementById('howtoSteps');
+      stepsWrap.innerHTML = '';
+      const steps = (data.steps || []);
+      if (steps.length) {
+        steps.forEach(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          stepsWrap.appendChild(li);
         });
+      } else {
+        const li = document.createElement('li'); li.textContent = 'ยังไม่มีขั้นตอนในระบบ'; stepsWrap.appendChild(li);
       }
 
-      // ตรวจจำนวนล็อตของชื่อวัตถุดิบ (มีแล้วใช้, ถ้าไม่มี endpoint ก็ให้ถาม)
-      async function probeLots(name) {
-        try {
-          const res = await fetch(`/api/lots/?name=${encodeURIComponent(name)}`);
-          if (!res.ok) throw 0;
-          return await res.json(); // {ok, lots, has_expired}
-        } catch {
-          return { ok: false };
-        }
+      const links = document.getElementById('howtoLinks');
+      links.innerHTML = '';
+      const yt = document.createElement('a');
+      yt.href = buildYTHowtoLink(title);
+      yt.target = '_blank'; yt.rel = 'noopener';
+      yt.className = 'btn-primary';
+      yt.style.display = 'inline-block';
+      yt.textContent = 'ไปดูบน YouTube';
+      links.appendChild(yt);
+
+      (data.videos || []).forEach(v => {
+        const a = document.createElement('a');
+        a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
+        a.style.marginLeft = '8px';
+        a.textContent = v.title || v.url;
+        links.appendChild(a);
+      });
+
+      document.getElementById('howtoModal').style.display = 'flex';
+    }
+
+    async function openHowtoSmart(dishName) {
+      try { const d = await fetchHowto(dishName); return renderHowtoModal(d, dishName); } catch (_) { }
+      try { const d = await fetchHowtoFromStatic(dishName); return renderHowtoModal(d, dishName); } catch (_) { }
+      return renderHowtoModal({ title: dishName, steps: [] }, dishName);
+    }
+
+    function showOnly(data, title = "ผลลัพธ์") {
+      const list = document.getElementById("recipeList");
+      list.innerHTML = "";
+
+      const h = document.createElement("div");
+      h.className = "section-title";
+      h.textContent = title;
+      list.appendChild(h);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "ไม่พบเมนูจากวัตถุดิบนี้";
+        list.appendChild(li);
+        return;
       }
 
-      // map คำตอบไทย -> policy
-      function policyFromThai(answer) {
-        const t = (answer || '').toLowerCase().trim();
+      data.forEach(r => {
+        const name = r.title || r.name || "เมนู";
 
-        // ไทย
-        if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t)) return { policy: "newest" };
-        if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t)) return { policy: "oldest" };
-        if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t)) return { policy: "nearest_expiry" };
-        if (/(หมดอายุแล้ว|หมดอายุ)/.test(t)) return { policy: "expired_only" };
+        const li = document.createElement("li");
+        li.className = "recipe-item";
 
-        // อังกฤษ
-        if (/\b(latest|newest)\b/.test(t)) return { policy: "newest" };
-        if (/\b(oldest)\b/.test(t)) return { policy: "oldest" };
-        if (/\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
-        if (/\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
+        const header = document.createElement("div");
+        header.className = "recipe-header";
 
-        // วันที่ (ไทย/อังกฤษ/ISO)
-        let iso = parseSpeechDateToISO(t);
-        if (!iso) {
-          const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/); // รับทุกอย่างหลังคำว่า date/วันที่
-          if (m) iso = parseSpeechDateToISO(m[1]);
-        }
-        if (iso) return { policy: "by_date", target_date: iso };
+        const titleEl = document.createElement("p");
+        titleEl.className = "recipe-title";
+        titleEl.textContent = name;
 
-        return null;
+        const btn = document.createElement("button");
+        btn.className = "howto-btn";
+        btn.textContent = "ดูวิธีทำ";
+        btn.onclick = () => openHowtoSmart(name);
+
+        header.appendChild(titleEl);
+        header.appendChild(btn);
+
+        const meta = document.createElement("div");
+        meta.className = "recipe-meta";
+        const used = (r.used || []).join(", ") || "-";
+        const missing = (r.missing || []).join(", ") || "-";
+        const metaHTML = document.createElement('div');
+        // ใช้ safe HTML ที่ควบคุมเอง (ไม่แทรกค่าจากผู้ใช้ลงไป)
+        metaHTML.innerHTML = `<span class="ok">ใช้ได้:</span> ${used}<br><span class="miss">ขาด:</span> ${missing}`;
+        meta.appendChild(metaHTML);
+
+        li.appendChild(header);
+        li.appendChild(meta);
+        list.appendChild(li);
+      });
+    }
+
+    async function openRecipes(ingredientName) {
+      currentIngredient = ingredientName;
+      cacheLocal = null; cacheApi = null;
+
+      document.getElementById("recipeTitle").textContent = `เมนูจาก: ${ingredientName}`;
+      const list = document.getElementById("recipeList");
+      list.innerHTML = "";
+      const loading = document.createElement("li");
+      loading.textContent = "กำลังโหลดจาก Local…";
+      list.appendChild(loading);
+
+      document.getElementById("recipeModal").classList.add('is-show');
+      setActiveSourceButton("local");
+
+      try {
+        cacheLocal = await fetchSection(ingredientName, "local");
+      } catch (e) {
+        cacheLocal = [];
+        console.warn("Local error:", e);
       }
+      showOnly(cacheLocal, "อาหารไทย");
 
-      function speakOut(text, { lang = 'en-US', rate, pitch, onend } = {}) {
-        if (!('speechSynthesis' in window)) return;
-        const synth = window.speechSynthesis;
-        try { synth.cancel(); } catch (e) { }
-
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang;
-
-        const pickVoice = () => {
-          const vs = synth.getVoices() || [];
-          // พยายามเลือกเสียงตาม lang
-          const vv = vs.find(v => v.lang?.toLowerCase().startsWith(lang.toLowerCase()));
-          if (vv) u.voice = vv;
-        };
-        if (synth.onvoiceschanged !== undefined) {
-          synth.addEventListener('voiceschanged', pickVoice, { once: true });
-        }
-        pickVoice();
-
-        if (rate) u.rate = rate;
-        if (pitch) u.pitch = pitch;
-        u.onend = () => onend && onend();
-        synth.speak(u);
+      // preload API
+      try {
+        cacheApi = await fetchSection(ingredientName, "api");
+      } catch (e) {
+        cacheApi = [];
+        console.warn("API error:", e);
       }
+    }
 
-      // ---- พูด "อังกฤษ" แล้ว "ฟังภาษาไทย" 1 ครั้ง ----
-      function speakEN_thenListenTH(promptText) {
-        return new Promise((resolve) => {
-          try { if (recognizer && listening) recognizer.stop(); } catch (e) { }
-          speakOut(promptText, {
-            lang: 'en-US',
-            rate: 1.0,
-            pitch: 1.0,
-            onend: () => {
-              const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-              if (!SR) return resolve("");
-              const r = new SR();
-              r.lang = 'th-TH';         // << ฟังภาษาไทย
-              r.interimResults = false;
-              r.continuous = false;
-              r.onresult = ev => resolve((ev.results?.[0]?.[0]?.transcript || '').trim());
-              r.onerror = () => resolve("");
-              try { r.start(); } catch { resolve(""); }
-            }
-          });
-        });
-      }
-
-      // ---- มีหลายล็อต -> ถามนโยบาย แล้วลบ / ถ้าล็อตเดียว -> ลบที่ใกล้หมดอายุ
-      async function disambiguateAndDelete({ name, amount }) {
-        try {
-          const info = await probeLots(name);
-          const mustAsk = !info.ok || (info.ok && info.lots > 1);
-
-          if (!mustAsk) {
-            return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
-          }
-
-          // พูดอังกฤษ แต่จะไป "ฟังไทย"
-          let hint = "Which batch do you want to delete?";
-          const ans = await speakEN_thenListenTH(hint);
-
-          const pol = policyFromThai(ans);
-          if (!pol) {
-            toast("ยังจับคำตอบไม่ได้ จะใช้แบบใกล้หมดอายุ");
-            return sendDeleteVoice({ name, amount, policy: "nearest_expiry" });
-          }
-          return sendDeleteVoice({ name, amount, ...pol });
-
-        } catch (e) {
-          toast("ผิดพลาด: " + (e.message || e));
-        }
-      }
-
-      function parseSpeechDateToISO(input) {
-        if (!input) return "";
-
-        // --- เตรียมข้อมูล ---
-        const thaiDigits = { '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9' };
-        const normDigits = s => s.replace(/[๐-๙]/g, d => thaiDigits[d] || d);
-        let s = normDigits(String(input)).trim().toLowerCase()
-          .replace(/\s+/g, ' ')
-          .replace(/[\u200B-\u200D\uFEFF]/g, ''); // zero-width
-
-        // ตัดคำบอกเล่า
-        s = s.replace(/^(วันที่|เดท|date)\s*/, '').replace(/(พศ|พ\.ศ\.)/g, 'พศ').replace(/(คศ|ค\.ศ\.)/g, 'คศ');
-
-        const now = new Date();
-        const pad2 = n => String(n).padStart(2, '0');
-
-        // --- คำสัมพัทธ์ ---
-        if (/^วันนี้$/.test(s)) return now.toISOString().slice(0, 10);
-        if (/^พรุ่งนี้$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
-        if (/^มะรืน(นี้)?$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 2); return d.toISOString().slice(0, 10); }
-        if (/^เมื่อวาน$/.test(s)) { const d = new Date(now); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
-        let mRel = s.match(/^อีก\s*(\d+)\s*(วัน|สัปดาห์|อาทิตย์|เดือน)$/);
-        if (mRel) {
-          const d = new Date(now);
-          const n = parseInt(mRel[1], 10);
-          if (/วัน/.test(mRel[2])) d.setDate(d.getDate() + n);
-          else if (/(สัปดาห์|อาทิตย์)/.test(mRel[2])) d.setDate(d.getDate() + 7 * n);
-          else d.setMonth(d.getMonth() + n);
-          return d.toISOString().slice(0, 10);
-        }
-
-        // --- เดือน (ไทย/อังกฤษ/แบบพูดติดปาก) ---
-        const TH_MONTHS = {
-          'มกราคม': 1, 'ม.ค.': 1, 'มค': 1, 'มกรา': 1,
-          'กุมภาพันธ์': 2, 'ก.พ.': 2, 'กพ': 2,
-          'มีนาคม': 3, 'มี.ค.': 3, 'มีค': 3, 'มีนา': 3,
-          'เมษายน': 4, 'เม.ย.': 4, 'เมย': 4,
-          'พฤษภาคม': 5, 'พ.ค.': 5, 'พค': 5,
-          'มิถุนายน': 6, 'มิ.ย.': 6, 'มิย': 6,
-          'กรกฎาคม': 7, 'ก.ค.': 7, 'กค': 7, 'กรกฎา': 7, 'กรา': 7,
-          'สิงหาคม': 8, 'ส.ค.': 8, 'สค': 8, 'สิงหา': 8,
-          'กันยายน': 9, 'ก.ย.': 9, 'กย': 9, 'กันยา': 9,
-          'ตุลาคม': 10, 'ต.ค.': 10, 'ตค': 10, 'ตุลา': 10,
-          'พฤศจิกายน': 11, 'พ.ย.': 11, 'พย': 11, 'พฤศจิกา': 11,
-          'ธันวาคม': 12, 'ธ.ค.': 12, 'ธค': 12, 'ธันวา': 12
-        };
-        const EN_MONTHS = {
-          jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
-          jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
-          oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
-        };
-
-        // helper ตัด พ.ศ./ค.ศ.
-        const normalizeYear = (yRaw, preferBuddhist = true) => {
-          let y = parseInt(yRaw, 10);
-          if (isNaN(y)) return null;
-          // มีคีย์เวิร์ดค.ศ./พ.ศ. ก็จัดให้ชัด
-          if (/คศ/.test(s)) { if (y < 100) y += 2000; return y; }
-          if (/พศ/.test(s)) { if (y < 100) y += 2500; if (y < 2400) y += 543; return y; }
-          // ไม่มีคีย์เวิร์ด → เดา: 2 หลักให้เป็น ค.ศ. 20xx, 4 หลัก > 2400 ให้ลบ 543
-          if (y < 100) return 2000 + y;      // 68 -> 2068 (ถ้าอยากเป็น 2568 ให้เปลี่ยนเป็น 2500 + y)
-          if (y > 2400) return y - 543;      // 2568 -> 2025
-          return y;                          // 2025 คงเดิม
-        };
-
-        // --- รูปแบบ ISO/ตัวเลขล้วน: YYYY-MM-DD / DD-MM-YYYY / 10/1/68 ---
-        let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-        if (m) {
-          const y = normalizeYear(m[1]); const mo = +m[2]; const d = +m[3];
-          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-        m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
-        if (m) {
-          const y = normalizeYear(m[3]); const mo = +m[2]; const d = +m[1];
-          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-
-        // --- ไทย: "10 มค 68" / "10 มกราคม 2568"
-        m = s.match(/^(\d{1,2})\s*([ก-๙\.]+)\s*(\d{2,4})?$/);
-        if (m && TH_MONTHS[m[2]]) {
-          const d = +m[1], mo = TH_MONTHS[m[2]];
-          let y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
-          // ถ้าไม่ใส่ปี แล้ววัน-เดือนไปแล้ว ให้เลื่อนไปปีหน้า
-          if (!m[3]) {
-            const test = new Date(now.getFullYear(), mo - 1, d);
-            if (test < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y += 1;
-          }
-          return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-
-        // --- อังกฤษ: "10 Jan 25" / "January 10 2025"
-        m = s.match(/^(?:(\d{1,2})\s+([a-z]+)\s+(\d{2,4})|([a-z]+)\s+(\d{1,2})\s+(\d{2,4}))$/i);
-        if (m) {
-          let d, moName, y;
-          if (m[1]) { d = +m[1]; moName = m[2]; y = normalizeYear(m[3]); }
-          else { moName = m[4]; d = +m[5]; y = normalizeYear(m[6]); }
-          const mo = EN_MONTHS[moName] || EN_MONTHS[moName?.slice(0, 3)];
-          if (mo && y) return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-
-        // --- “วันที่ 10 เดือน 1 68” แบบพูดเป็นตัวเลข
-        m = s.match(/^วันที่?\s*(\d{1,2})\s*(เดือน)?\s*(\d{1,2})\s*(ปี)?\s*(\d{2,4})$/);
-        if (m) {
-          const d = +m[1], mo = +m[3], y = normalizeYear(m[5]);
-          if (y) return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-
-        // --- คำติดกัน: "10มค68" / "10กุมภาพันธ์2568"
-        m = s.match(/^(\d{1,2})([ก-๙]+)(\d{2,4})?$/);
-        if (m && TH_MONTHS[m[2]]) {
-          const d = +m[1], mo = TH_MONTHS[m[2]];
-          const y = m[3] ? normalizeYear(m[3]) : now.getFullYear();
-          return `${y}-${pad2(mo)}-${pad2(d)}`;
-        }
-
-        // ไม่เข้าเงื่อนไข
-        return "";
-      }
-
-      // ---- map คำตอบ -> policy (รองรับไทย/อังกฤษ + วันที่)
-      function policyFromThai(answer) {
-        // แปลงเลขไทยก่อน แล้วค่อย toLowerCase
-        const raw = normalizeThaiDigits(answer || "");
-        const t = raw.toLowerCase().trim();
-
-        if (/(ล่าสุด|ใหม่สุด|ใหม่ที่สุด|อันใหม่)/.test(t) || /\b(latest|newest)\b/.test(t)) return { policy: "newest" };
-        if (/(เก่าสุด|เก่าที่สุด|อันเก่า)/.test(t) || /\b(oldest)\b/.test(t)) return { policy: "oldest" };
-        if (/(ใกล้หมดอายุ|ใกล้จะหมด|ใกล้หมด)/.test(t) || /\b(nearest\s*(expiry|expiration)|near\s*expiry|soonest\s*expiry)\b/.test(t)) return { policy: "nearest_expiry" };
-        if (/(หมดอายุแล้ว|หมดอายุ)/.test(t) || /\b(expired\s*only|already\s*expired|expired)\b/.test(t)) return { policy: "expired_only" };
-
-        // ดึงวันที่ (จะรองรับ "วันที่ …", "date …", หรือพูดวันที่ตรง ๆ)
-        let iso = parseSpeechDateToISO(t);
-        if (!iso) {
-          const m = t.match(/(?:วันที่|เดท|date)\s*(.+)$/);
-          if (m) iso = parseSpeechDateToISO(m[1]);
-        }
-        if (iso) return { policy: "by_date", target_date: iso };
-
-        return null;
-      }
-
-      function showOnly(data, title = "ผลลัพธ์") {
-        const list = document.getElementById("recipeList");
-        list.innerHTML = "";
-        const h = document.createElement("div");
-        h.className = "section-title";
-        h.textContent = title;
-        list.appendChild(h);
-
-        if (!Array.isArray(data) || data.length === 0) {
-          const li = document.createElement("li");
-          li.textContent = "API ใช้หมดแล้ว";
-          list.appendChild(li);
-          return;
-        }
-
-        data.forEach(r => {
-          const name = r.title || r.name || "เมนู";
-          const li = document.createElement("li");
-          li.className = "recipe-item";
-          li.innerHTML = `<strong>${name}</strong>`;
-          const meta = document.createElement("div");
-          meta.className = "recipe-meta";
-          meta.textContent = `ใช้ได้: ${(r.used || []).join(", ") || "-"} | ขาด: ${(r.missing || []).join(", ") || "-"}`;
-          li.appendChild(meta);
-
-          const btn = document.createElement('button');
-          btn.className = 'btn-primary';
-          btn.style.marginTop = '6px';
-          btn.textContent = 'ดูวิธีทำ';
-          btn.onclick = () => openHowtoSmart(name);
-          li.appendChild(btn);
-
-          list.appendChild(li);
-        });
-
-        document.getElementById('btnSourceLocal')?.addEventListener('click', () => {
-          setActiveSourceButton("local");
-          showOnly(cacheLocal, "อาหารไทย");
-        });
-        document.getElementById('btnSourceApi')?.addEventListener('click', () => {
-          setActiveSourceButton("api");
-          showOnly(cacheApi, "อาหารต่างชาติ");
-        });
-
-        function _normalizeName(s) {
-          return (s || '').trim().toLocaleLowerCase('th-TH').replace(/\s+/g, ' ');
-        }
-        function buildYTHowtoLink(dish) {
-          const q = (dish || '').trim().replace(/\s+/g, ' ');
-          return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${q} วิธีทำ`);
-        }
-
-        async function fetchHowto(name) {
-          const res = await fetch(HOWTO_URL + '?q=' + encodeURIComponent(name), { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-          if (!res.ok || data.ok === false) throw new Error(data.error || ('HTTP ' + res.status));
-          return data; // {title, ingredients, steps, videos?}
-        }
-
-        async function fetchHowtoFromStatic(name) {
-          const res = await fetch(HOWTO_ALL_URL, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-
-          let root = data;
-          if (root && typeof root === 'object' && !Array.isArray(root) && root.recipes)
-            root = root.recipes;
-
-          const want = _normalizeName(name);
-          let found = null;
-
-          if (root && typeof root === 'object' && !Array.isArray(root)) {
-            for (const k of Object.keys(root)) {
-              if (_normalizeName(k) === want) { found = root[k]; break; }
-            }
-            if (!found) {
-              for (const v of Object.values(root)) {
-                if (_normalizeName(v?.title || v?.name || '') === want) { found = v; break; }
-              }
-            }
-          }
-          if (!found && Array.isArray(root))
-            found = root.find(x => _normalizeName(x.title || x.name) === want) || null;
-
-          if (!found && root && Array.isArray(root.items))
-            found = root.items.find(x => _normalizeName(x.title || x.name) === want) || null;
-
-          if (!found) throw new Error('not-found');
-          return {
-            title: found.title || found.name || name,
-            ingredients: Array.isArray(found.ingredients) ? found.ingredients : [],
-            steps: Array.isArray(found.steps) ? found.steps : [],
-            videos: Array.isArray(found.videos) ? found.videos : []
-          };
-        }
-
-        function renderHowtoModal(data, fallbackName) {
-          const title = data.title || fallbackName || '';
-          document.getElementById('howtoTitle').textContent = title;
-
-          const ing = (data.ingredients || []);
-          document.getElementById('howtoIngredients').textContent =
-            ing.length ? ('วัตถุดิบ: ' + ing.join(', ')) : '';
-
-          const stepsWrap = document.getElementById('howtoSteps');
-          stepsWrap.innerHTML = '';
-          const steps = (data.steps || []);
-          if (steps.length) {
-            steps.forEach(s => {
-              const li = document.createElement('li'); li.textContent = s; stepsWrap.appendChild(li);
-            });
-          } else {
-            const li = document.createElement('li'); li.textContent = 'ยังไม่มีขั้นตอนในระบบ'; stepsWrap.appendChild(li);
-          }
-
-          const links = document.getElementById('howtoLinks');
-          links.innerHTML = '';
-
-          // ปุ่มไป YouTube ให้มีเสมอ
-          const yt = document.createElement('a');
-          yt.href = buildYTHowtoLink(title);
-          yt.target = '_blank'; yt.rel = 'noopener';
-          yt.className = 'btn-primary';
-          yt.style.display = 'inline-block';
-          yt.textContent = 'ไปดูบน YouTube';
-          links.appendChild(yt);
-
-          // ลิงก์วิดีโอจากไฟล์ (ถ้ามี)
-          (data.videos || []).forEach(v => {
-            const a = document.createElement('a');
-            a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
-            a.style.marginLeft = '8px';
-            a.textContent = v.title || v.url;
-            links.appendChild(a);
-          });
-
-          document.getElementById('howtoModal').style.display = 'flex';
-        }
-
-        async function openHowtoSmart(dishName) {
-          try {
-            const d = await fetchHowto(dishName);
-            return renderHowtoModal(d, dishName);
-          } catch (_) { }
-          try {
-            const d = await fetchHowtoFromStatic(dishName);
-            return renderHowtoModal(d, dishName);
-          } catch (_) { }
-          return renderHowtoModal({ title: dishName, steps: [] }, dishName);
-        }
-      }
-    </script>
-
+    // bind once (นอก showOnly)
+    document.getElementById('btnSourceLocal')?.addEventListener('click', () => {
+      setActiveSourceButton("local"); showOnly(cacheLocal, "อาหารไทย");
+    });
+    document.getElementById('btnSourceApi')?.addEventListener('click', () => {
+      setActiveSourceButton("api"); showOnly(cacheApi, "อาหารต่างชาติ");
+    });
+    document.getElementById('recipeModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'recipeModal') { closeModal(); }
+    });
+  </script>
 </body>
 
 </html>
